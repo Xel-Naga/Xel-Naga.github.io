@@ -1,0 +1,361 @@
+step1:  apt-get install ***
+apt-get update && apt-get install -y \
+ssh \
+sshpass \
+curl \
+git \
+gcc \
+wget \
+python-dev \
+python-pip \
+bundler \
+postgresql \
+build-essential \
+libpq-dev \
+libxslt-dev \
+libssl-dev \
+libgmp3-dev \
+libxml2-dev \
+libffi-dev \
+crudini \
+--no-install-recommends
+
+step2:  git clone relavent repos 
+export repos_dir=/home/opnfv/repos
+mkdir -p ${repos_dir}
+git config --global http.sslVerify false
+git clone https://gerrit.opnfv.org/gerrit/functest ${repos_dir}/functest
+git clone https://gerrit.opnfv.org/gerrit/releng ${repos_dir}/releng
+git clone https://github.com/openstack/rally.git ${repos_dir}/rally
+git clone https://github.com/opendaylight/integration.git ${repos_dir}/odl_integration
+git clone -b stable https://github.com/boucherv-orange/clearwater-live-test ${repos_dir}/vims-test
+
+step3: pip install
+ pip install -r ${repos_dir}/functest/docker/requirements.pip
+
+
+step5: bugs need to be worked around
+# create functest network
+sshpass -proot ssh 10.145.140.111 "neutron net-create demo-net --provider:physical_network physnet --provider:network_type vlan --provider:segmentation_id 103 --os-username=ADMIN --os-password=console --os-tenant-name=admin --os-auth-url=http://172.16.1.222:35357/v2.0"
+# create functest subnet
+sshpass -proot ssh 10.145.140.111 "neutron subnet-create demo-net 192.168.1.0/24 --name demo-subnet --gateway 192.168.1.254 --os-username=ADMIN --os-password=console --os-tenant-name=admin --os-auth-url=http://172.16.1.222:35357/v2.0"
+
+#another bug:
+iptables -nL --line-num |grep "reject-with icmp-port-unreachable" | awk {'iptables -D FORWARD $1'} 
+Acturely, Deleting one item is ok! donot have to delete all.
+Chain FORWARD (policy ACCEPT)
+num  target     prot opt source               destination
+1    ACCEPT     all  --  0.0.0.0/0            192.168.200.0/22     ctstate RELATED,ESTABLISHED
+2    ACCEPT     all  --  0.0.0.0/0            0.0.0.0/0           
+3    REJECT     all  --  0.0.0.0/0            0.0.0.0/0            reject-with icmp-port-unreachable
+
+
+step4: Download cirros.img into 
+curl http://download.cirros-cloud.net/0.3.4/cirros-0.3.4-x86_64-disk.img  -o /home/opnfv/functest/data/cirros-0.3.4-x86_64-disk.img
+
+
+step6: 
+
+
+export INSTALLER_TYPE=compass
+export INSTALLER_IP=192.168.50.110
+export REPOS_DIR=/home/opnfv/repos
+export FUNCTEST_REPO_DIR=/home/opnfv/repos/functest
+export FUNCTEST_CONF_DIR=/home/opnfv/functest/conf
+#put your own config_functest.yaml into /home/opnfv/functest/conf/
+${FUNCTEST_REPO_DIR}/docker/prepare_env.sh
+
+
+step7: run testcase
+vping: 
+
+${FUNCTEST_REPO_DIR}/docker/run_tests.sh --test vims
+
+1. modify openstack.creds username to 'admin'	OK
+
+Failed to add admin on tenant
+
+2. 已有role，解封即可
+
+neutron net-create ext-net --router:external
+
+
+neutron net-create ext-net --router:external --provider:physical_network=physnet --provider:network_type=flat
+
+ERROR - Failed to get external network
+
+       base_image_url: http://cloud-images.ubuntu.com/trusty/current/trusty-server-cloudimg-amd64-disk1.img
+        base_image_name: ubuntu_14.04
+
+3.neutron subnet-create ext-net 192.168.79.0/24 --name ext-subnet  --enable-dhcp --gateway 192.168.79.1
+
+2015-12-18 17:33:27 LOG <manager> [manager_server_ip_0c4a2.create] INFO: fip:{'floating_network_id': u'ad058289-232c-4081-84f6-656490affaf4'}
+2015-12-18 17:33:27 LOG <manager> [manager_server_ip_0c4a2.create] ERROR: Exception raised on operation [neutron_plugin.floatingip.create] invocation
+Traceback (most recent call last):
+  File "/home/opnfv/functest/data/vIMS/venv_cloudify/local/lib/python2.7/site-packages/cloudify/decorators.py", line 125, in wrapper
+    result = func(*args, **kwargs)
+  File "/home/opnfv/functest/data/vIMS/venv_cloudify/local/lib/python2.7/site-packages/openstack_plugin_common/__init__.py", line 515, in wrapper
+    _re_raise(e, recoverable=False, status_code=e.status_code)
+  File "/home/opnfv/functest/data/vIMS/venv_cloudify/local/lib/python2.7/site-packages/openstack_plugin_common/__init__.py", line 512, in wrapper
+    return f(*args, **kw)
+  File "/home/opnfv/functest/data/vIMS/venv_cloudify/local/lib/python2.7/site-packages/neutron_plugin/floatingip.py", line 61, in create
+    {'floatingip': floatingip})['floatingip']
+  File "/home/opnfv/functest/data/vIMS/venv_cloudify/local/lib/python2.7/site-packages/neutronclient/v2_0/client.py", line 98, in with_params
+    ret = self.function(instance, *args, **kwargs)
+  File "/home/opnfv/functest/data/vIMS/venv_cloudify/local/lib/python2.7/site-packages/neutronclient/v2_0/client.py", line 453, in create_floatingip
+    return self.post(self.floatingips_path, body=body)
+  File "/home/opnfv/functest/data/vIMS/venv_cloudify/local/lib/python2.7/site-packages/neutronclient/v2_0/client.py", line 1325, in post
+    headers=headers, params=params)
+  File "/home/opnfv/functest/data/vIMS/venv_cloudify/local/lib/python2.7/site-packages/neutronclient/v2_0/client.py", line 1251, in do_request
+    self._handle_fault_response(status_code, replybody)
+  File "/home/opnfv/functest/data/vIMS/venv_cloudify/local/lib/python2.7/site-packages/neutronclient/v2_0/client.py", line 1216, in _handle_fault_response
+    exception_handler_v20(status_code, des_error_body)
+  File "/home/opnfv/functest/data/vIMS/venv_cloudify/local/lib/python2.7/site-packages/neutronclient/v2_0/client.py", line 66, in exception_handler_v20
+    status_code=status_code)
+NonRecoverableError: Unable to find any IP address on external network ad058289-232c-4081-84f6-656490affaf4. [status_code=400]
+
+
+4. 偶遇 ，未重现  
+
+rm /root/.ssh/cloudify-agent-kp.pem
+2015-12-18 01:26:03 LOG <manager> [agent_keypair_e9719.creation] ERROR: VALIDATION ERROR: private key path already exists: /root/.ssh/cloudify-agent-kp.pem
+2015-12-18 01:26:03 LOG <manager> [agent_keypair_e9719.creation] ERROR: Exception raised on operation [nova_plugin.keypair.creation_validation] invocation
+
+
+
+5. 偶遇 ，未重现 
+
+2015-12-18 18:09:20 CFY <manager> [agent_keypair_dfe36.create] Task started 'nova_plugin.keypair.create'
+2015-12-18 18:17:00 LOG <manager> [agent_keypair_17dc9.create] INFO: [grakiss]creating keypair:{'name': u'cloudify-agent'}
+2015-12-18 18:09:21 LOG <manager> [agent_keypair_dfe36.create] ERROR: Exception raised on operation [nova_plugin.keypair.create] invocation
+Traceback (most recent call last):
+  File "/home/opnfv/functest/data/vIMS/venv_cloudify/local/lib/python2.7/site-packages/cloudify/decorators.py", line 125, in wrapper
+    result = func(*args, **kwargs)
+  File "/home/opnfv/functest/data/vIMS/venv_cloudify/local/lib/python2.7/site-packages/openstack_plugin_common/__init__.py", line 532, in wrapper
+    _re_raise(e, recoverable=False, status_code=e.code)
+  File "/home/opnfv/functest/data/vIMS/venv_cloudify/local/lib/python2.7/site-packages/openstack_plugin_common/__init__.py", line 527, in wrapper
+    return f(*args, **kw)
+  File "/home/opnfv/functest/data/vIMS/venv_cloudify/local/lib/python2.7/site-packages/nova_plugin/keypair.py", line 75, in create
+    keypair.get('public_key'))
+  File "/home/opnfv/functest/data/vIMS/venv_cloudify/local/lib/python2.7/site-packages/novaclient/v1_1/keypairs.py", line 77, in create
+    return self._create('/%s' % self.keypair_prefix, body, 'keypair')
+  File "/home/opnfv/functest/data/vIMS/venv_cloudify/local/lib/python2.7/site-packages/novaclient/base.py", line 152, in _create
+    _resp, body = self.api.client.post(url, body=body)
+  File "/home/opnfv/functest/data/vIMS/venv_cloudify/local/lib/python2.7/site-packages/novaclient/client.py", line 286, in post
+    return self._cs_request(url, 'POST', **kwargs)
+  File "/home/opnfv/functest/data/vIMS/venv_cloudify/local/lib/python2.7/site-packages/novaclient/client.py", line 260, in _cs_request
+    **kwargs)
+  File "/home/opnfv/functest/data/vIMS/venv_cloudify/local/lib/python2.7/site-packages/novaclient/client.py", line 242, in _time_request
+    resp, body = self.request(url, method, **kwargs)
+  File "/home/opnfv/functest/data/vIMS/venv_cloudify/local/lib/python2.7/site-packages/novaclient/client.py", line 236, in request
+    raise exceptions.from_response(resp, body, url, method)
+NonRecoverableError: Key pair 'cloudify-agent' already exists. [status_code=409]
+2015-12-18 18:09:21 CFY <manager> [agent_keypair_dfe36.create] Task failed 'nova_plugin.keypair.create' -> Key pair 'cloudify-agent' already exists. [status_code=409] [attempt 1/6]
+
+
+6 需要保留的私有网络，修改clean_openstack.py 
+
+neutron_private_net_name: functest-net
+neutron_router_name: functest-router
+
+
+7 admin用户使用keystone时需要在内网访问
+需要修改compass中keystone的endpoint设置
+修改keystone的role配置，重新跑keystone的
+
+8 需要修改liberty的cinder.conf配置，加密认证调整为v3接口
+
+for i in 10.1.0.5{0..4}; do ssh $i "sed -i -e 's/v2.0/v3/g' /etc/cinder/cinder.conf"; done
+for i in 10.1.0.5{0..4}; do ssh $i "cat /opt/service |grep cinder |xargs -i service {} restart"; done
+
+
+2015-12-21 09:31:08 LOG <manager> [volume_16461.creation] ERROR: Exception raised on operation [cinder_plugin.volume.creation_validation] invocation
+Traceback (most recent call last):
+  File "/home/opnfv/functest/data/vIMS/venv_cloudify/local/lib/python2.7/site-packages/cloudify/decorators.py", line 125, in wrapper
+    result = func(*args, **kwargs)
+  File "/home/opnfv/functest/data/vIMS/venv_cloudify/local/lib/python2.7/site-packages/openstack_plugin_common/__init__.py", line 544, in wrapper
+    return f(*args, **kw)
+  File "/home/opnfv/functest/data/vIMS/venv_cloudify/local/lib/python2.7/site-packages/cinder_plugin/volume.py", line 117, in creation_validation
+    'display_name')
+  File "/home/opnfv/functest/data/vIMS/venv_cloudify/local/lib/python2.7/site-packages/openstack_plugin_common/__init__.py", line 264, in validate_resource
+    resource_quota = sugared_client.get_quota(openstack_type)
+  File "/home/opnfv/functest/data/vIMS/venv_cloudify/local/lib/python2.7/site-packages/openstack_plugin_common/__init__.py", line 741, in get_quota
+    quotas = self.quotas.get(tenant_id)
+  File "/home/opnfv/functest/data/vIMS/venv_cloudify/local/lib/python2.7/site-packages/cinderclient/v1/quotas.py", line 39, in get
+    "quota_set")
+  File "/home/opnfv/functest/data/vIMS/venv_cloudify/local/lib/python2.7/site-packages/cinderclient/base.py", line 145, in _get
+    resp, body = self.api.client.get(url)
+  File "/home/opnfv/functest/data/vIMS/venv_cloudify/local/lib/python2.7/site-packages/cinderclient/client.py", line 220, in get
+    return self._cs_request(url, 'GET', **kwargs)
+  File "/home/opnfv/functest/data/vIMS/venv_cloudify/local/lib/python2.7/site-packages/cinderclient/client.py", line 187, in _cs_request
+    **kwargs)
+  File "/home/opnfv/functest/data/vIMS/venv_cloudify/local/lib/python2.7/site-packages/cinderclient/client.py", line 170, in request
+    raise exceptions.from_response(resp, body)
+ClientException: The server has either erred or is incapable of performing the requested operation. (HTTP 500) (Request-ID: req-5bb07bbb-5a79-47a8-ba86-df10c8828708)
+2015-12-21 09:31:08 CFY <manager> [volume_16461.creation] Task failed 'cinder_plugin.volume.creation_validation' -> The server has either erred or is incapable of performing the requested operation. (HTTP 500) (Request-ID: req-5bb07bbb-5a79-47a8-ba86-df10c8828708) [attempt 5/6]
+
++-----------------------------+-------+
+| Quota                       | Limit |
++-----------------------------+-------+
+| instances                   | 10    |
+| cores                       | 20    |
+| ram                         | 51200 |
+| floating_ips                | 10    |
+| fixed_ips                   | -1    |
+| metadata_items              | 128   |
+| injected_files              | 5     |
+| injected_file_content_bytes | 10240 |
+| injected_file_path_bytes    | 255   |
+| key_pairs                   | 100   |
+| security_groups             | 10    |
+| security_group_rules        | 20    |
+| server_groups               | 10    |
+| server_group_members        | 10    |
++-----------------------------+-------+
+
+761449407eca4648abe9d02206f7bbff
+
+http://192.168.50.243:/os-quota-sets/761449407eca4648abe9d02206f7bbff
+
+curl -g -i -X GET http://192.168.50.243:8774/v2/761449407eca4648abe9d02206f7bbff/os-quota-sets/761449407eca4648abe9d02206f7bbff -H "User-Agent: python-novaclient" -H "Accept: application/json" -H "X-Auth-Token: a7e15e6afe894175b67620623279cead"
+
+curl -s -X POST http://192.168.50.243:5000/v2.0/tokens \
+            -H "Content-Type: application/json" \
+            -d '{"auth": {"tenantName": "'"$OS_TENANT_NAME"'", "passwordCredentials":
+            {"username": "'"$OS_USERNAME"'", "password": "'"$OS_PASSWORD"'"}}}' \
+            | python -m json.tool
+
+curl -i http://192.168.50.243:5000/v2.0/tokens -X POST -H "Content-Type: application/json" -H "Accept: application/json" -H "User-Agent: python-cinderclient" -d '{"auth": {"tenantName": "vIMS", "passwordCredentials": {"username": "vIMS", "password": "vIMS"}}}' 
+
+curl -i http://192.168.50.243:8776/v2/9853cf77350f4791800019b1c52d3b26/os-quota-sets/9853cf77350f4791800019b1c52d3b26?usage=False -X GET -H "X-Auth-Project-Id: vIMS" -H "User-Agent: python-cinderclient" -H "Accept: application/json" -H "X-Auth-Token: 5a98162d4de343db965d06ffbb0c31ce"
+
+9 调整vIMS的配额,调整新增tenant默认配额,修改cinder.conf,增加默认配额
+
+cinder quota-update --volumes 10 $(openstack project show -f value -c id vIMS)
+
+2015-12-22 01:21:06 CFY <manager> [volume_cf8d5.creation] Task started 'cinder_plugin.volume.creation_validation'
+2015-12-22 01:21:07 LOG <manager> [volume_cf8d5.creation] ERROR: VALIDATION ERROR:volume (node volume) cannot be created due to quota limitations. provisioned volumes: 0, quota: 0
+2015-12-22 01:21:07 LOG <manager> [volume_cf8d5.creation] ERROR: Exception raised on operation [cinder_plugin.volume.creation_validation] invocation
+Traceback (most recent call last):
+  File "/home/opnfv/functest/data/vIMS/venv_cloudify/local/lib/python2.7/site-packages/cloudify/decorators.py", line 125, in wrapper
+    result = func(*args, **kwargs)
+  File "/home/opnfv/functest/data/vIMS/venv_cloudify/local/lib/python2.7/site-packages/openstack_plugin_common/__init__.py", line 544, in wrapper
+    return f(*args, **kw)
+  File "/home/opnfv/functest/data/vIMS/venv_cloudify/local/lib/python2.7/site-packages/cinder_plugin/volume.py", line 117, in creation_validation
+    'display_name')
+  File "/home/opnfv/functest/data/vIMS/venv_cloudify/local/lib/python2.7/site-packages/openstack_plugin_common/__init__.py", line 277, in validate_resource
+    raise NonRecoverableError(err)
+NonRecoverableError: volume (node volume) cannot be created due to quota limitations. provisioned volumes: 0, quota: 0
+2015-12-22 01:21:07 CFY <manager> [volume_cf8d5.creation] Task failed 'cinder_plugin.volume.creation_validation' -> volume (node volume) cannot be created due to quota limitations. provisioned volumes: 0, quota: 0 [attempt 1/6]
+
+
+
+10 磁盘大小不足，调整虚拟机模版中的磁盘大小
+
+2015-12-22 01:56:59 CFY <manager> [manager_server_2fa03.start] Sending task 'nova_plugin.server.start'
+2015-12-22 01:56:59 CFY <manager> [manager_server_2fa03.start] Task started 'nova_plugin.server.start'
+2015-12-22 01:56:59 LOG <manager> [manager_server_2fa03.start] ERROR: Exception raised on operation [nova_plugin.server.start] invocation
+Traceback (most recent call last):
+  File "/home/opnfv/functest/data/vIMS/venv_cloudify/local/lib/python2.7/site-packages/cloudify/decorators.py", line 125, in wrapper
+    result = func(*args, **kwargs)
+  File "/home/opnfv/functest/data/vIMS/venv_cloudify/local/lib/python2.7/site-packages/openstack_plugin_common/__init__.py", line 527, in wrapper
+    return f(*args, **kw)
+  File "/home/opnfv/functest/data/vIMS/venv_cloudify/local/lib/python2.7/site-packages/nova_plugin/server.py", line 350, in start
+    server_task_state))
+NonRecoverableError: Unexpected server state ERROR:None
+2015-12-22 01:56:59 CFY <manager> [manager_server_2fa03.start] Task failed 'nova_plugin.server.start' -> Unexpected server state ERROR:None [attempt 1/6]
+2015-12-22 01:56:59 CFY <manager> 'install' workflow execution failed: Workflow failed: Task failed 'nova_plugin.server.start' -> Unexpected server state ERROR:None
+bootstrap failed!
+executing teardown due to failed bootstrap
+
+Fatal error: Needed to prompt for a connection or sudo password (host: 192.168.50.160), but abort-on-prompts was set to True
+
+
+nova boot --image 0156d00f-b74d-41e4-8f5d-cc08abedc052 --flavor 2  --nic net-id=699ff612-ca39-46ea-9c14-b4226c334988 test1
+
+nova boot --image 0476e3a2-b057-487c-b72a-5eb1c1ad10a0 --flavor 1 --nic net-id=699ff612-ca39-46ea-9c14-b4226c334988 test_cirros
+
+service nova-cert restart
+service nova-scheduler restart
+service nova-consoleauth restart
+service nova-conductor restart
+
+
+2015-12-21 22:14:58.733 10394 WARNING nova.scheduler.utils [req-d0a8996c-01e1-4375-bb0e-648ca0427032 a7e15e6afe894175b67620623279cead 761449407eca4648abe9d02206f7bbff - - -] Failed to compute_task_build_instances: No valid host was found. There are not enough hosts available.
+Traceback (most recent call last):
+
+  File "/usr/lib/python2.7/dist-packages/oslo_messaging/rpc/server.py", line 142, in inner
+    return func(*args, **kwargs)
+
+  File "/usr/lib/python2.7/dist-packages/nova/scheduler/manager.py", line 84, in select_destinations
+    filter_properties)
+
+  File "/usr/lib/python2.7/dist-packages/nova/scheduler/filter_scheduler.py", line 90, in select_destinations
+    raise exception.NoValidHost(reason=reason)
+
+NoValidHost: No valid host was found. There are not enough hosts available.
+
+
+2015-12-21 22:14:58.698 9263 DEBUG nova.scheduler.filters.disk_filter [req-d0a8996c-01e1-4375-bb0e-648ca0427032 a7e15e6afe894175b67620623279cead 761449407eca4648abe9d02206f7bbff - - -] (host4, host4) ram:15536 disk:6144 io_ops:0 instances:0 does not have 20480 MB usable disk, it only has 6144.0 MB usable disk. host_passes /usr/lib/python2.7/dist-packages/nova/scheduler/filters/disk_filter.py:60
+2015-12-21 22:14:58.698 9263 DEBUG nova.scheduler.filters.disk_filter [req-d0a8996c-01e1-4375-bb0e-648ca0427032 a7e15e6afe894175b67620623279cead 761449407eca4648abe9d02206f7bbff - - -] (host5, host5) ram:15536 disk:6144 io_ops:0 instances:0 does not have 20480 MB usable disk, it only has 6144.0 MB usable disk. host_passes /usr/lib/python2.7/dist-packages/nova/scheduler/filters/disk_filter.py:60
+2015-12-21 22:14:58.699 9263 INFO nova.filters [req-d0a8996c-01e1-4375-bb0e-648ca0427032 a7e15e6afe894175b67620623279cead 761449407eca4648abe9d02206f7bbff - - -] Filter DiskFilter returned 0 hosts
+
+
+11 accelerate模式下重跑ansible会出现host连接失败的情况
+
+for i in 10.1.0.5{0..4}; do ssh $i "ps -aux | grep accelerate | awk '{print \$2}' | xargs -i kill -9 {}"; done
+
+
+REQ: curl -i http://192.168.50.243:5000/v2.0/tokens -X POST -H "Content-Type: application/json" -H "Accept: application/json" -H "User-Agent: python-cinderclient" -d '{"auth": {"tenantName": "vIMS", "passwordCredentials": {"username": "vIMS", "password": "vIMS"}}}'
+
+REQ: curl -i http://192.168.50.243:8776/v2/ef0d90cba7d144a98c8e61bf41bf65c3/os-quota-sets/ef0d90cba7d144a98c8e61bf41bf65c3?usage=False -X GET -H "X-Auth-Project-Id: vIMS" -H "User-Agent: python-cinderclient" -H "Accept: application/json" -H "X-Auth-Token: a0a9a1aae9a34a448055528a08f91e37"
+
+
+12 cinder配额查询鉴权失败
+[keymgr]
+encryption_auth_url=http://192.168.50.243:5000/v3
+
+for i in 10.1.0.5{0..4}; do ssh $i "sed -i -e '/^\[keystone_authtoken/i [keymgr]\nencryption_auth_url=http://192.168.50.243:5000/v3\n' /etc/cinder/cinder.conf"; done
+for i in 10.1.0.5{0..4}; do ssh $i "cat /opt/service |grep cinder |xargs -i service {} restart"; done
+
+
+RESP BODY: {"token": {"methods": ["password", "token"], "roles": [{"id": "9fe2ff9ee4384b1894a90878d3e92bab", "name": "_member_"}], "expires_at": "2015-12-22T12:14:58.000000Z", "project": {"domain": {"id": "default", "name": "Default"}, "id": "ef0d90cba7d144a98c8e61bf41bf65c3", "name": "vIMS"}, "catalog": "<removed>", "extras": {}, "user": {"domain": {"id": "default", "name": "Default"}, "id": "a6b9f63c379f45f39a2c2dbfe4f71e13", "name": "vIMS"}, "audit_ids": ["dgRoWZ22S0ihOo1GR_87gA"], "issued_at": "2015-12-22T11:14:58.086505"}}
+ _http_log_response /usr/lib/python2.7/dist-packages/keystoneclient/session.py:215
+2015-12-22 03:14:58.193 12063 INFO cinder.api.openstack.wsgi [req-8b54fff2-eb2b-4ada-bd5b-a45460c2ed32 a6b9f63c379f45f39a2c2dbfe4f71e13 ef0d90cba7d144a98c8e61bf41bf65c3 - - -] GET http://192.168.50.243:8776/v2/ef0d90cba7d144a98c8e61bf41bf65c3/os-quota-sets/ef0d90cba7d144a98c8e61bf41bf65c3?usage=False
+2015-12-22 03:14:58.193 12063 DEBUG cinder.api.openstack.wsgi [req-8b54fff2-eb2b-4ada-bd5b-a45460c2ed32 a6b9f63c379f45f39a2c2dbfe4f71e13 ef0d90cba7d144a98c8e61bf41bf65c3 - - -] Empty body provided in request get_body /usr/lib/python2.7/dist-packages/cinder/api/openstack/wsgi.py:862
+2015-12-22 03:14:58.195 12063 DEBUG keystoneclient.auth.identity.v3.base [req-8b54fff2-eb2b-4ada-bd5b-a45460c2ed32 a6b9f63c379f45f39a2c2dbfe4f71e13 ef0d90cba7d144a98c8e61bf41bf65c3 - - -] Making authentication request to http://localhost:5000/v3/auth/tokens get_auth_ref /usr/lib/python2.7/dist-packages/keystoneclient/auth/identity/v3/base.py:188
+2015-12-22 03:14:58.200 12063 ERROR cinder.api.middleware.fault [req-8b54fff2-eb2b-4ada-bd5b-a45460c2ed32 a6b9f63c379f45f39a2c2dbfe4f71e13 ef0d90cba7d144a98c8e61bf41bf65c3 - - -] Caught error: Authorization failed: Unable to establish connection to http://localhost:5000/v3/auth/tokens
+2015-12-22 03:14:58.201 12063 INFO cinder.api.middleware.fault [req-8b54fff2-eb2b-4ada-bd5b-a45460c2ed32 a6b9f63c379f45f39a2c2dbfe4f71e13 ef0d90cba7d144a98c8e61bf41bf65c3 - - -] http://192.168.50.243:8776/v2/ef0d90cba7d144a98c8e61bf41bf65c3/os-quota-sets/ef0d90cba7d144a98c8e61bf41bf65c3?usage=False returned with HTTP 500
+2015-12-22 03:14:58.202 12063 INFO eventlet.wsgi.server [req-8b54fff2-eb2b-4ada-bd5b-a45460c2ed32 a6b9f63c379f45f39a2c2dbfe4f71e13 ef0d90cba7d144a98c8e61bf41bf65c3 - - -] 172.16.1.3 - - [22/Dec/2015 03:14:58] "GET /v2/ef0d90cba7d144a98c8e61bf41bf65c3/os-quota-sets/ef0d90cba7d144a98c8e61bf41bf65c3?usage=False HTTP/1.1" 500 425 0.090137
+2015
+
+13 连接虚拟机的ssh失败
+
+2015-12-22 12:05:19 CFY <manager> [manager_data_1f744->volume_bf8d3|preconfigure] Task started 'fabric_plugin.tasks.run_script'
+2015-12-22 12:05:20 LOG <manager> [manager_data_1f744->volume_bf8d3|preconfigure] INFO: preparing fabric environment...
+2015-12-22 12:05:20 LOG <manager> [manager_data_1f744->volume_bf8d3|preconfigure] INFO: environment prepared successfully
+2015-12-22 12:06:12 LOG <manager> [manager_data_1f744->volume_bf8d3|preconfigure] ERROR: Exception raised on operation [fabric_plugin.tasks.run_script] invocation
+Traceback (most recent call last):
+  File "/home/opnfv/functest/data/vIMS/venv_cloudify/local/lib/python2.7/site-packages/cloudify/decorators.py", line 125, in wrapper
+    result = func(*args, **kwargs)
+  File "/home/opnfv/functest/data/vIMS/venv_cloudify/local/lib/python2.7/site-packages/fabric_plugin/tasks.py", line 148, in run_script
+    if not fabric_files.exists(remote_ctx_dir):
+  File "/home/opnfv/functest/data/vIMS/venv_cloudify/local/lib/python2.7/site-packages/fabric/contrib/files.py", line 36, in exists
+    return not func(cmd).failed
+  File "/home/opnfv/functest/data/vIMS/venv_cloudify/local/lib/python2.7/site-packages/fabric/network.py", line 639, in host_prompting_wrapper
+    return func(*args, **kwargs)
+  File "/home/opnfv/functest/data/vIMS/venv_cloudify/local/lib/python2.7/site-packages/fabric/operations.py", line 1042, in run
+    shell_escape=shell_escape) 
+  File "/home/opnfv/functest/data/vIMS/venv_cloudify/local/lib/python2.7/site-packages/fabric/operations.py", line 909, in _run_command
+    channel=default_channel(), command=wrapped_command, pty=pty,
+  File "/home/opnfv/functest/data/vIMS/venv_cloudify/local/lib/python2.7/site-packages/fabric/state.py", line 388, in default_channel
+    chan = _open_session()
+  File "/home/opnfv/functest/data/vIMS/venv_cloudify/local/lib/python2.7/site-packages/fabric/state.py", line 380, in _open_session
+    return connections[env.host_string].get_transport().open_session()
+  File "/home/opnfv/functest/data/vIMS/venv_cloudify/local/lib/python2.7/site-packages/fabric/network.py", line 151, in __getitem__
+    self.connect(key)
+  File "/home/opnfv/functest/data/vIMS/venv_cloudify/local/lib/python2.7/site-packages/fabric/network.py", line 143, in connect
+    self[key] = connect(user, host, port, cache=self)
+  File "/home/opnfv/functest/data/vIMS/venv_cloudify/local/lib/python2.7/site-packages/fabric/network.py", line 565, in connect
+    raise NetworkError(msg, e) 
+NetworkError: Low level socket error connecting to host 192.168.50.160 on port 22: No route to host (tried 5 times)
