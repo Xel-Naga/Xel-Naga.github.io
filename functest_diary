@@ -69,7 +69,27 @@ ${FUNCTEST_REPO_DIR}/docker/prepare_env.sh
 step7: run testcase
 vping: 
 
+修改keystone的role配置，重新跑keystone的
+
+
+neutron net-create ext-net --router:external --provider:physical_network=physnet --provider:network_type=flat
+
+neutron subnet-create ext-net 192.168.50.0/24 --name ext-subnet  --allocation-pool start=192.168.50.114,end=192.168.50.118 --disable-dhcp --gateway 192.168.50.1
+
+for i in 10.1.0.5{0..4}; do ssh $i "sed -i -e '/^\[keystone_authtoken/i [keymgr]\nencryption_auth_url=http://192.168.50.242:5000/v3\n' /etc/cinder/cinder.conf"; done
+for i in 10.1.0.5{0..4}; do ssh $i "cat /opt/service |grep cinder |xargs -i service {} restart"; done
+
+cinder quota-update --volumes 10 $(openstack project show -f value -c id vIMS)
+
+
+python /home/opnfv/repos/functest/testcases/VIM/OpenStack/CI/libraries/clean_openstack.py -d /home/opnfv/repos/functest/
+
+
+
 ${FUNCTEST_REPO_DIR}/docker/run_tests.sh --test vims
+
+
+
 
 1. modify openstack.creds username to 'admin'	OK
 
@@ -87,7 +107,7 @@ ERROR - Failed to get external network
        base_image_url: http://cloud-images.ubuntu.com/trusty/current/trusty-server-cloudimg-amd64-disk1.img
         base_image_name: ubuntu_14.04
 
-3.neutron subnet-create ext-net 192.168.79.0/24 --name ext-subnet  --enable-dhcp --gateway 192.168.79.1
+3.neutron subnet-create ext-net 192.168.50.0/24 --name ext-subnet  --allocation-pool start=192.168.50.114,end=192.168.50.118 --disable-dhcp --gateway 192.168.50.1
 
 2015-12-18 17:33:27 LOG <manager> [manager_server_ip_0c4a2.create] INFO: fip:{'floating_network_id': u'ad058289-232c-4081-84f6-656490affaf4'}
 2015-12-18 17:33:27 LOG <manager> [manager_server_ip_0c4a2.create] ERROR: Exception raised on operation [neutron_plugin.floatingip.create] invocation
@@ -301,21 +321,12 @@ NoValidHost: No valid host was found. There are not enough hosts available.
 2015-12-21 22:14:58.699 9263 INFO nova.filters [req-d0a8996c-01e1-4375-bb0e-648ca0427032 a7e15e6afe894175b67620623279cead 761449407eca4648abe9d02206f7bbff - - -] Filter DiskFilter returned 0 hosts
 
 
-11 accelerate模式下重跑ansible会出现host连接失败的情况
-
-for i in 10.1.0.5{0..4}; do ssh $i "ps -aux | grep accelerate | awk '{print \$2}' | xargs -i kill -9 {}"; done
-
-
-REQ: curl -i http://192.168.50.243:5000/v2.0/tokens -X POST -H "Content-Type: application/json" -H "Accept: application/json" -H "User-Agent: python-cinderclient" -d '{"auth": {"tenantName": "vIMS", "passwordCredentials": {"username": "vIMS", "password": "vIMS"}}}'
-
-REQ: curl -i http://192.168.50.243:8776/v2/ef0d90cba7d144a98c8e61bf41bf65c3/os-quota-sets/ef0d90cba7d144a98c8e61bf41bf65c3?usage=False -X GET -H "X-Auth-Project-Id: vIMS" -H "User-Agent: python-cinderclient" -H "Accept: application/json" -H "X-Auth-Token: a0a9a1aae9a34a448055528a08f91e37"
-
 
 12 cinder配额查询鉴权失败
 [keymgr]
-encryption_auth_url=http://192.168.50.243:5000/v3
+encryption_auth_url=http://192.168.50.242:5000/v3
 
-for i in 10.1.0.5{0..4}; do ssh $i "sed -i -e '/^\[keystone_authtoken/i [keymgr]\nencryption_auth_url=http://192.168.50.243:5000/v3\n' /etc/cinder/cinder.conf"; done
+for i in 10.1.0.5{0..4}; do ssh $i "sed -i -e '/^\[keystone_authtoken/i [keymgr]\nencryption_auth_url=http://192.168.50.242:5000/v3\n' /etc/cinder/cinder.conf"; done
 for i in 10.1.0.5{0..4}; do ssh $i "cat /opt/service |grep cinder |xargs -i service {} restart"; done
 
 
@@ -328,6 +339,17 @@ RESP BODY: {"token": {"methods": ["password", "token"], "roles": [{"id": "9fe2ff
 2015-12-22 03:14:58.201 12063 INFO cinder.api.middleware.fault [req-8b54fff2-eb2b-4ada-bd5b-a45460c2ed32 a6b9f63c379f45f39a2c2dbfe4f71e13 ef0d90cba7d144a98c8e61bf41bf65c3 - - -] http://192.168.50.243:8776/v2/ef0d90cba7d144a98c8e61bf41bf65c3/os-quota-sets/ef0d90cba7d144a98c8e61bf41bf65c3?usage=False returned with HTTP 500
 2015-12-22 03:14:58.202 12063 INFO eventlet.wsgi.server [req-8b54fff2-eb2b-4ada-bd5b-a45460c2ed32 a6b9f63c379f45f39a2c2dbfe4f71e13 ef0d90cba7d144a98c8e61bf41bf65c3 - - -] 172.16.1.3 - - [22/Dec/2015 03:14:58] "GET /v2/ef0d90cba7d144a98c8e61bf41bf65c3/os-quota-sets/ef0d90cba7d144a98c8e61bf41bf65c3?usage=False HTTP/1.1" 500 425 0.090137
 2015
+
+11 accelerate模式下重跑ansible会出现host连接失败的情况
+failed to connect
+for i in 10.1.0.5{0..4}; do ssh $i "ps -aux | grep accelerate | awk '{print \$2}' | xargs -i kill -9 {}"; done
+
+
+REQ: curl -i http://192.168.50.243:5000/v2.0/tokens -X POST -H "Content-Type: application/json" -H "Accept: application/json" -H "User-Agent: python-cinderclient" -d '{"auth": {"tenantName": "vIMS", "passwordCredentials": {"username": "vIMS", "password": "vIMS"}}}'
+
+REQ: curl -i http://192.168.50.243:8776/v2/ef0d90cba7d144a98c8e61bf41bf65c3/os-quota-sets/ef0d90cba7d144a98c8e61bf41bf65c3?usage=False -X GET -H "X-Auth-Project-Id: vIMS" -H "User-Agent: python-cinderclient" -H "Accept: application/json" -H "X-Auth-Token: a0a9a1aae9a34a448055528a08f91e37"
+
+
 
 13 连接虚拟机的ssh失败
 
@@ -359,3 +381,38 @@ Traceback (most recent call last):
   File "/home/opnfv/functest/data/vIMS/venv_cloudify/local/lib/python2.7/site-packages/fabric/network.py", line 565, in connect
     raise NetworkError(msg, e) 
 NetworkError: Low level socket error connecting to host 192.168.50.160 on port 22: No route to host (tried 5 times)
+
+
+
+
+      1 Validating openstack-blueprint.yaml
+      2 Failed to validate blueprint openstack-blueprint.yaml: Additional properties are not allowed ('data_types' was unexpected); Path to error:
+      3 Creating new deployment from blueprint clearwater-opnfv at management server 192.168.50.114
+      4 An error occurred on the server: 404: blueprint clearwater-opnfv not found
+      5 Executing workflow 'install' on deployment 'clearwater-opnfv' at management server 192.168.50.114 [timeout=1800 seconds]
+      6 An error occurred on the server: 404: deployment clearwater-opnfv not found
+
+2015-12-25 09:03:00,070 - vIMS - INFO - Cloudify-manager server is UP !
+2015-12-25 09:03:00,071 - vIMS - INFO - Cloudify deployment duration:'1243.9'
+2015-12-25 09:03:00,071 - vIMS - INFO - Downloading the openstack-blueprint.yaml blueprint
+2015-12-25 09:03:04,770 - vIMS - INFO - Writing the inputs file
+2015-12-25 09:03:34,802 - vIMS - INFO - vIMS VNF deployment Start Time:'2015-12-25 09:03:34'
+2015-12-25 09:03:34,802 - vIMS - INFO - Launching the clearwater-opnfv deployment
+2015-12-25 09:03:34,802 - vIMS - DEBUG - Executing command : /bin/bash -c 'source /home/opnfv/functest/data/vIMS/venv_cloudify/bin/activate; cd /home/opnfv/functest/data/vIMS/opnfv-cloudify-clearwater; cfy blueprints upload -b clearwater-opnfv -p openstack-blueprint.yaml; cfy deployments create -b clearwater-opnfv -d clearwater-opnfv --inputs inputs.yaml; cfy executions start -w install -d clearwater-opnfv --timeout 1800; '
+2015-12-25 09:03:48,945 - vIMS - DEBUG - Validating openstack-blueprint.yaml
+Failed to validate blueprint openstack-blueprint.yaml: Additional properties are not allowed ('data_types' was unexpected); Path to error:
+Creating new deployment from blueprint clearwater-opnfv at management server 192.168.50.115
+An error occurred on the server: 404: blueprint clearwater-opnfv not found
+Executing workflow 'install' on deployment 'clearwater-opnfv' at management server 192.168.50.115 [timeout=1800 seconds]
+An error occurred on the server: 404: deployment clearwater-opnfv not found
+
+2015-12-25 09:03:48,945 - vIMS - ERROR - Error when executing command /bin/bash -c 'source /home/opnfv/functest/data/vIMS/venv_cloudify/bin/activate; cd /home/opnfv/functest/data/vIMS/opnfv-cloudify-clearwater; cfy blueprints upload -b clearwater-opnfv -p openstack-blueprint.yaml; cfy deployments create -b clearwater-opnfv -d clearwater-opnfv --inputs inputs.yaml; cfy executions start -w install -d clearwater-opnfv --timeout 1800; '
+
+
+/home/opnfv/functest/data/vIMS/opnfv-cloudify-clearwater
+
+
+root@86db862613b3:/home/opnfv# cfy --version
+Cloudify CLI 3.2.1
+
+
