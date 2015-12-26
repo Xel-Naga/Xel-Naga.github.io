@@ -1,0 +1,7 @@
+无线软件竞赛对战平台开发
+compass部署ubuntu版本中ceph集成
+compass的centos版本中ceph集成
+ceph角色调整及界面支持ceph角色拖放
+ELK日志组件与compass集成，支持界面进行日志查询和问题定位
+西安德电pan eu项目支持，负责ceph集成调测，copmass界面演示调测
+functest中vIMS用例调测
