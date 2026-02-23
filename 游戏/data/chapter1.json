@@ -1,0 +1,473 @@
+{
+  "chapter": 1,
+  "title": "风雪赴约",
+  "description": "土木工程专业学生林墨接受发小陈青山的邀请，与女友苏晓雨前往西南山区参观悬云观。旅途异常频发，预感不祥。",
+  "locations": [
+    {
+      "id": "college_dorm",
+      "name": "大学宿舍",
+      "description": "透过窗户看到城市冬日的暮色，高楼灯火渐次亮起。宿舍书桌上摊开结构力学教材、工程计算器、画满公式的草稿纸。桌上的手机屏幕亮着，显示未读消息。一个半开的登山包放在地上，林墨正在往里装东西。",
+      "interactives": [
+        {
+          "id": "study_desk",
+          "name": "书桌",
+          "type": "examine",
+          "description": "凌乱的书桌，上面有结构力学教材、工程计算器、草稿纸。草稿纸上画着复杂的力学分析图。",
+          "actions": ["examine"],
+          "result": {
+            "clue": "clue_engineering_background",
+            "feedback": "你检查了书桌，这些是你的学习用品，显示你土木工程专业背景。"
+          }
+        },
+        {
+          "id": "backpack",
+          "name": "登山包",
+          "type": "examine",
+          "description": "半开的登山包，里面已经装了一些工具：卷尺、激光测距仪、小型水平仪、结构力学笔记。",
+          "actions": ["examine", "take_item"],
+          "result": {
+            "item": "item_tools",
+            "feedback": "你检查了登山包，里面是你的工程测量工具。"
+          }
+        },
+        {
+          "id": "phone",
+          "name": "手机",
+          "type": "examine",
+          "description": "手机屏幕亮着，显示与陈青山的微信对话。最后一条消息是陈青山发来的：'墨哥，我在西南老家发现一座神奇道观，有你想不到的古代机关。寒假来玩？带上嫂子。'",
+          "actions": ["examine", "read_message"],
+          "result": {
+            "clue": "clue_chen_invitation",
+            "feedback": "你查看了手机消息，陈青山邀请你去西南山区参观一座有道观。"
+          }
+        },
+        {
+          "id": "window",
+          "name": "窗户",
+          "type": "examine",
+          "description": "窗外是城市夜景，冬日暮色中的高楼灯火。远处天际线隐没在薄雾中。",
+          "actions": ["examine"],
+          "result": {
+            "feedback": "窗外是熟悉的城市夜景，但不知为何，你感到一丝不安。"
+          }
+        }
+      ],
+      "exits": [
+        {
+          "direction": "leave",
+          "target": "subway_station",
+          "description": "离开宿舍前往地铁站",
+          "locked": false
+        }
+      ],
+      "characters": []
+    },
+    {
+      "id": "subway_station",
+      "name": "地铁站",
+      "description": "晚高峰的地铁站，人群如织，指示灯闪烁，广播报站声嘈杂。墙上的地铁指示牌显示着复杂的线路图。苏晓雨背着画板包，提着摄影器材箱，在闸机口张望。",
+      "interactives": [
+        {
+          "id": "su_xiaoyu",
+          "name": "苏晓雨",
+          "type": "npc",
+          "description": "你的女朋友，美术学院视觉传达专业大二学生。背着画板包，提着摄影器材箱，在人群中寻找你。",
+          "actions": ["talk"],
+          "result": {
+            "dialogue": "dialogue_suxiaoyu_subway",
+            "feedback": "你与苏晓雨交谈。"
+          }
+        },
+        {
+          "id": "crowd",
+          "name": "人群",
+          "type": "examine",
+          "description": "晚高峰的人群，行色匆匆。空气中弥漫着疲惫和匆忙的气息。每个人都专注于自己的路程。",
+          "actions": ["examine"],
+          "result": {
+            "feedback": "地铁站人山人海，大家都在赶路回家。喧嚣中带着一种疏离感。"
+          }
+        },
+        {
+          "id": "subway_sign",
+          "name": "地铁指示牌",
+          "type": "examine",
+          "description": "地铁线路图，密密麻麻的线路交织。其中一个站名'悬云山'被圈出来，旁边手写标注'未开通'。",
+          "actions": ["examine"],
+          "result": {
+            "clue": "clue_suspicious_subway_sign",
+            "feedback": "你注意到地铁线路图上'悬云山'站标注着'未开通'，但陈青山说那里有道观。"
+          }
+        }
+      ],
+      "exits": [
+        {
+          "direction": "north",
+          "target": "train_station",
+          "description": "前往火车站",
+          "locked": false
+        },
+        {
+          "direction": "back",
+          "target": "college_dorm",
+          "description": "返回宿舍",
+          "locked": false
+        }
+      ],
+      "characters": ["su_xiaoyu"]
+    },
+    {
+      "id": "train_station",
+      "name": "火车站候车厅",
+      "description": "巨大的电子显示屏滚动着车次信息。旅客拖着行李匆匆走过，广播声、对话声、行李箱轮子声混杂。你和苏晓雨找到空位坐下，你拿出火车票再次核对时间。",
+      "interactives": [
+        {
+          "id": "electronic_display",
+          "name": "电子显示屏",
+          "type": "examine",
+          "description": "显示车次信息的电子屏。突然，屏幕剧烈闪烁几下，所有屏幕同时变黑，然后显示出一行红色文字：'悬云观—未开通'。文字停留三秒后，屏幕恢复正常。",
+          "actions": ["examine", "record"],
+          "result": {
+            "clue": "clue_suspicious_display",
+            "feedback": "电子屏显示了诡异的信息'悬云观—未开通'，但周围旅客似乎都没注意到。"
+          }
+        },
+        {
+          "id": "passengers",
+          "name": "旅客",
+          "type": "examine",
+          "description": "候车的旅客，各自忙碌，似乎没人注意到刚才电子屏的异常。",
+          "actions": ["examine"],
+          "result": {
+            "feedback": "旅客们都在忙自己的事，没人谈论刚才的屏幕异常。这让你感到更加不安。"
+          }
+        },
+        {
+          "id": "train_ticket",
+          "name": "火车票",
+          "type": "examine",
+          "description": "你的火车票：K447次，前往西南山区。发车时间19:30，到达时间次日6:00。",
+          "actions": ["examine"],
+          "result": {
+            "feedback": "火车票显示你要去一个偏远山区，行程漫长。"
+          }
+        }
+      ],
+      "exits": [
+        {
+          "direction": "board_train",
+          "target": "mountain_bus",
+          "description": "登上火车",
+          "locked": false
+        },
+        {
+          "direction": "back",
+          "target": "subway_station",
+          "description": "返回地铁站",
+          "locked": false
+        }
+      ],
+      "characters": []
+    }
+  ],
+  "items": [
+    {
+      "id": "item_tools",
+      "name": "工程工具套装",
+      "type": "tool",
+      "description": "你的工程测量工具，包括卷尺、激光测距仪、小型水平仪。",
+      "detailed_description": "专业工程测量工具：\n- 卷尺：5米钢卷尺，精度±1mm\n- 激光测距仪：最大测距50m，精度±2mm\n- 水平仪：气泡式水平仪，可测倾斜角度\n- 结构力学笔记：你自己的学习笔记，记录各种结构分析案例",
+      "usable": true,
+      "combinable": false,
+      "use_scenes": ["测量建筑结构", "检查倾斜角度", "计算距离"],
+      "use_effect": "用于测量距离、角度和水平度",
+      "disposable": false,
+      "droppable": false,
+      "weight": 2.5,
+      "value": "重要",
+      "acquired_from": "初始携带",
+      "icon": "fas fa-tools",
+      "color": "blue"
+    },
+    {
+      "id": "item_phone",
+      "name": "手机",
+      "type": "tool",
+      "description": "你的智能手机，用于通讯和记录。",
+      "detailed_description": "现代智能手机，信号时好时坏。里面有与陈青山的聊天记录，以及一些山区照片。",
+      "usable": true,
+      "combinable": false,
+      "use_scenes": ["查看消息", "拍照记录", "查看时间"],
+      "use_effect": "查看信息和拍照",
+      "disposable": false,
+      "droppable": false,
+      "weight": 0.2,
+      "value": "普通",
+      "acquired_from": "初始携带",
+      "icon": "fas fa-mobile-alt",
+      "color": "green"
+    },
+    {
+      "id": "item_backpack",
+      "name": "登山包",
+      "type": "container",
+      "description": "你的登山背包，装有衣物和个人用品。",
+      "detailed_description": "中等大小的登山包，防水材质。里面装有：\n- 保暖衣物\n- 个人卫生用品\n- 充电宝\n- 手电筒\n- 急救包",
+      "usable": false,
+      "combinable": false,
+      "use_scenes": [],
+      "use_effect": "无",
+      "disposable": false,
+      "droppable": false,
+      "weight": 5.0,
+      "value": "普通",
+      "acquired_from": "初始携带",
+      "icon": "fas fa-hiking",
+      "color": "brown"
+    }
+  ],
+  "npcs": [
+    {
+      "id": "su_xiaoyu",
+      "name": "苏晓雨",
+      "description": "你的女朋友，21岁，美术学院视觉传达专业大二学生。活泼开朗，观察力敏锐，直觉强。",
+      "relationship": 80,
+      "known_info": ["你的女朋友", "美术学院学生", "擅长观察细节", "对陈青山的行为感到不安"]
+    },
+    {
+      "id": "chen_qingshan",
+      "name": "陈青山",
+      "description": "你的发小，22岁，民宿老板和本地导游。热情但略显神秘，家族与悬云观有渊源。",
+      "relationship": 75,
+      "known_info": ["你的发小", "民宿老板", "熟悉山区", "家族与道观有关联", "隐瞒了一些信息"]
+    }
+  ],
+  "dialogues": {
+    "dialogue_suxiaoyu_subway": {
+      "npc_id": "su_xiaoyu",
+      "npc_name": "苏晓雨",
+      "initial_branches": [
+        {
+          "id": "greeting",
+          "player_text": "晓雨，等久了吧？",
+          "npc_response": "墨墨！这里人太多了，我差点被挤出去。你东西都带齐了吗？",
+          "next_branches": ["ask_preparation", "ask_feeling", "ask_about_chen"],
+          "result": {}
+        }
+      ],
+      "branches": {
+        "ask_preparation": {
+          "player_text": "你的东西都带齐了？山区可能条件不好。",
+          "npc_response": "当然！相机、三脚架、素描本、颜料……青山说那座道观建筑风格很特别，我一定要记录下来。对了，我看了青山的朋友圈。",
+          "next_branches": ["ask_about_chen"],
+          "result": {}
+        },
+        "ask_feeling": {
+          "player_text": "你感觉怎么样？累不累？",
+          "npc_response": "还好，就是人太多有点闷。对了，我看了青山的朋友圈，有点奇怪。",
+          "next_branches": ["ask_about_chen"],
+          "result": {}
+        },
+        "ask_about_chen": {
+          "player_text": "青山的朋友圈怎么了？",
+          "npc_response": "最近三个月，他发的全是山区风景照——云雾、古树、悬崖，没有一张有人的。连自拍都没有。感觉……有点刻意。像在展示什么，又像在隐藏什么。",
+          "next_branches": ["respond_worry", "respond_dismiss"],
+          "result": {
+            "clue": "clue_chen_strange_photos"
+          }
+        },
+        "respond_worry": {
+          "player_text": "确实有点奇怪……我也有点不安。",
+          "npc_response": "对吧？我们真的要去找他吗？我有点担心这次旅行。",
+          "next_branches": ["reassure_detailed", "insist_go"],
+          "result": {
+            "relationship": 5
+          }
+        },
+        "respond_dismiss": {
+          "player_text": "可能只是信号不好，没怎么拍人。别想太多。",
+          "npc_response": "希望是我想多了……但我的直觉很少出错。",
+          "next_branches": ["reassure_brief"],
+          "result": {
+            "relationship": -2
+          }
+        },
+        "reassure_detailed": {
+          "player_text": "别担心，就是去玩几天。如果不对劲，我们随时可以回来。",
+          "npc_response": "嗯……你说的对。车要开了，我们走吧。",
+          "next_branches": [],
+          "result": {
+            "relationship": 3,
+            "unlock_location": "train_station"
+          }
+        },
+        "reassure_brief": {
+          "player_text": "走吧，车要开了。",
+          "npc_response": "好吧……",
+          "next_branches": [],
+          "result": {
+            "unlock_location": "train_station"
+          }
+        },
+        "insist_go": {
+          "player_text": "已经答应了，而且我也好奇那道观的机关。",
+          "npc_response": "好吧……但答应我，如果发现不对劲，我们马上离开。",
+          "next_branches": ["promise_leave"],
+          "result": {
+            "relationship": -3
+          }
+        },
+        "promise_leave": {
+          "player_text": "我答应你。",
+          "npc_response": "嗯。走吧。",
+          "next_branches": [],
+          "result": {
+            "unlock_location": "train_station"
+          }
+        }
+      }
+    }
+  },
+  "quests": [
+    {
+      "id": "quest_chapter1",
+      "chapter": 1,
+      "name": "前往悬云观",
+      "description": "接受陈青山的邀请，前往西南山区的悬云观。旅途充满未知，保持警惕。",
+      "type": "主线任务",
+      "steps": [
+        {
+          "id": "step1",
+          "description": "在宿舍准备行李",
+          "target": "college_dorm",
+          "action": "explore",
+          "required_item": null,
+          "completed": false
+        },
+        {
+          "id": "step2",
+          "description": "与苏晓雨在地铁站会合",
+          "target": "subway_station",
+          "action": "arrive",
+          "required_item": null,
+          "completed": false
+        },
+        {
+          "id": "step3",
+          "description": "前往火车站候车",
+          "target": "train_station",
+          "action": "arrive",
+          "required_item": null,
+          "completed": false
+        },
+        {
+          "id": "step4",
+          "description": "登上火车开始旅程",
+          "target": "mountain_bus",
+          "action": "arrive",
+          "required_item": null,
+          "completed": false
+        }
+      ],
+      "prerequisites": [],
+      "rewards": {
+        "experience": 100,
+        "items": [],
+        "unlock": ["mountain_bus", "county_station", "mountain_road"]
+      },
+      "hidden": false
+    },
+    {
+      "id": "quest_investigate_suspicious",
+      "chapter": 1,
+      "name": "调查异常现象",
+      "description": "旅途中出现多个异常现象，需要记录和调查。",
+      "type": "支线任务",
+      "steps": [
+        {
+          "id": "step1",
+          "description": "记录电子屏异常信息",
+          "target": "train_station",
+          "action": "examine",
+          "required_item": "item_phone",
+          "completed": false
+        },
+        {
+          "id": "step2",
+          "description": "与苏晓雨讨论陈青山的异常行为",
+          "target": "subway_station",
+          "action": "dialogue",
+          "required_item": null,
+          "completed": false
+        }
+      ],
+      "prerequisites": ["quest_chapter1"],
+      "rewards": {
+        "experience": 50,
+        "items": [],
+        "unlock": []
+      },
+      "hidden": false
+    }
+  ],
+  "clues": {
+    "clue_engineering_background": {
+      "id": "clue_engineering_background",
+      "title": "土木工程背景",
+      "content": "林墨是土木工程专业学生，擅长结构分析和工程测量，对建筑结构有专业眼光。",
+      "category": "人物背景",
+      "chapter": 1,
+      "importance": "低"
+    },
+    "clue_chen_invitation": {
+      "id": "clue_chen_invitation",
+      "title": "陈青山的邀请",
+      "content": "陈青山邀请林墨去西南山区参观一座有古代机关的道观——悬云观。声称有道观有'想不到的古代机关'。",
+      "category": "任务线索",
+      "chapter": 1,
+      "importance": "中"
+    },
+    "clue_chen_strange_photos": {
+      "id": "clue_chen_strange_photos",
+      "title": "陈青山的奇怪朋友圈",
+      "content": "陈青山最近三个月只发山区风景照，没有人物照片，行为异常。苏晓雨认为他'像在展示什么，又像在隐藏什么'。",
+      "category": "人物异常",
+      "chapter": 1,
+      "importance": "中"
+    },
+    "clue_suspicious_display": {
+      "id": "clue_suspicious_display",
+      "title": "诡异的电子屏信息",
+      "content": "火车站电子屏显示'悬云观—未开通'的红色文字，持续三秒后恢复正常。周围旅客似乎都没注意到这一异常。",
+      "category": "超常现象",
+      "chapter": 1,
+      "importance": "高"
+    },
+    "clue_suspicious_subway_sign": {
+      "id": "clue_suspicious_subway_sign",
+      "title": "地铁站异常标注",
+      "content": "地铁线路图上'悬云山'站被手写标注'未开通'，与陈青山的描述矛盾。",
+      "category": "环境异常",
+      "chapter": 1,
+      "importance": "中"
+    }
+  },
+  "puzzles": [],
+  "events": [
+    {
+      "id": "event_train_display",
+      "name": "火车站电子屏异常",
+      "description": "火车站电子屏突然显示'悬云观—未开通'的红色文字",
+      "trigger": {
+        "type": "location",
+        "location": "train_station"
+      },
+      "actions": [
+        "add_clue:clue_suspicious_display",
+        "add_feedback:发现异常现象：电子屏显示诡异信息",
+        "reduce_sanity:5"
+      ],
+      "one_time": true
+    }
+  ]
+}

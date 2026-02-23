@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>悬观谜案：百年轮回 - 文字交互式解密游戏</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;700&family=ZCOOL+QingKe+HuangYou&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="game-container">
+        <!-- 顶部标题栏 -->
+        <header class="game-header">
+            <div class="header-left">
+                <h1 class="game-title"><i class="fas fa-mountain-sun"></i> 悬观谜案：百年轮回</h1>
+                <div class="chapter-info">第一章：风雪赴约</div>
+            </div>
+            <div class="header-right">
+                <div class="time-display">
+                    <i class="fas fa-clock"></i> <span id="game-time">2025-01-15 15:00</span>
+                </div>
+                <div class="weather-display">
+                    <i class="fas fa-snowflake"></i> <span id="game-weather">暴雪</span>
+                </div>
+                <div class="sanity-display">
+                    <i class="fas fa-brain"></i> 理智: <span id="sanity-value">100</span>/100
+                </div>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <!-- 左侧主游戏区域 -->
+            <div class="game-area">
+                <!-- 环境描述区域 -->
+                <div class="scene-container">
+                    <div class="scene-header">
+                        <h2><i class="fas fa-map-marker-alt"></i> <span id="location-name">当前位置</span></h2>
+                        <div class="location-path" id="location-path">山门 > 前院</div>
+                    </div>
+                    <div class="scene-description" id="scene-description">
+                        <!-- 场景描述将通过JavaScript动态填充 -->
+                        加载中...
+                    </div>
+                </div>
+
+                <!-- 操作反馈区域 -->
+                <div class="feedback-container">
+                    <div class="feedback-header">
+                        <h3><i class="fas fa-scroll"></i> 操作记录</h3>
+                        <button class="clear-btn" id="clear-feedback"><i class="fas fa-trash"></i> 清空</button>
+                    </div>
+                    <div class="feedback-content" id="feedback-content">
+                        <div class="feedback-item system">系统：游戏开始。欢迎来到《悬观谜案：百年轮回》。</div>
+                    </div>
+                </div>
+
+                <!-- 命令输入区域 -->
+                <div class="input-container">
+                    <div class="input-header">
+                        <h3><i class="fas fa-terminal"></i> 命令输入</h3>
+                        <div class="input-hint">点击上方高亮文字互动，或在此输入命令</div>
+                    </div>
+                    <div class="input-area">
+                        <input type="text" id="command-input" placeholder="输入命令，如：查看 石狮、前往 三清殿、使用 钥匙...">
+                        <button id="send-command"><i class="fas fa-paper-plane"></i> 执行</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧信息面板 -->
+            <div class="sidebar">
+                <!-- 快捷按钮区域 -->
+                <div class="quick-buttons">
+                    <button class="quick-btn" id="btn-inventory">
+                        <i class="fas fa-backpack"></i> 道具 <span class="badge" id="inventory-count">0/12</span>
+                    </button>
+                    <button class="quick-btn" id="btn-map">
+                        <i class="fas fa-map"></i> 地图
+                    </button>
+                    <button class="quick-btn" id="btn-notebook">
+                        <i class="fas fa-book"></i> 笔记 <span class="badge" id="clue-count">0</span>
+                    </button>
+                    <button class="quick-btn" id="btn-tasks">
+                        <i class="fas fa-tasks"></i> 任务 <span class="badge" id="task-count">0</span>
+                    </button>
+                    <button class="quick-btn" id="btn-save">
+                        <i class="fas fa-save"></i> 保存
+                    </button>
+                    <button class="quick-btn" id="btn-load">
+                        <i class="fas fa-folder-open"></i> 加载
+                    </button>
+                    <button class="quick-btn" id="btn-settings">
+                        <i class="fas fa-cog"></i> 设置
+                    </button>
+                    <button class="quick-btn" id="btn-help">
+                        <i class="fas fa-question-circle"></i> 帮助
+                    </button>
+                </div>
+
+                <!-- 道具库存面板 -->
+                <div class="panel inventory-panel" id="inventory-panel">
+                    <div class="panel-header">
+                        <h3><i class="fas fa-backpack"></i> 道具库存</h3>
+                        <button class="panel-close" id="close-inventory"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div class="panel-content">
+                        <div class="inventory-grid" id="inventory-grid">
+                            <!-- 道具槽位将通过JavaScript动态生成 -->
+                        </div>
+                        <div class="selected-item" id="selected-item-info">
+                            <p>点击道具查看详细信息</p>
+                        </div>
+                        <div class="item-actions" id="item-actions">
+                            <button class="action-btn" id="use-item" disabled><i class="fas fa-hand-pointer"></i> 使用</button>
+                            <button class="action-btn" id="examine-item" disabled><i class="fas fa-search"></i> 查看</button>
+                            <button class="action-btn" id="drop-item" disabled><i class="fas fa-trash"></i> 丢弃</button>
+                            <button class="action-btn" id="combine-item" disabled><i class="fas fa-link"></i> 组合</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 任务面板 -->
+                <div class="panel tasks-panel" id="tasks-panel">
+                    <div class="panel-header">
+                        <h3><i class="fas fa-tasks"></i> 任务日志</h3>
+                        <button class="panel-close" id="close-tasks"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div class="panel-content">
+                        <div class="tasks-list" id="tasks-list">
+                            <!-- 任务列表将通过JavaScript动态生成 -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 地图面板 -->
+                <div class="panel map-panel" id="map-panel">
+                    <div class="panel-header">
+                        <h3><i class="fas fa-map"></i> 道观地图</h3>
+                        <button class="panel-close" id="close-map"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div class="panel-content">
+                        <div class="map-display" id="map-display">
+                            <!-- 地图将通过JavaScript动态生成 -->
+                        </div>
+                        <div class="map-legend">
+                            <div class="legend-item"><span class="legend-color current"></span> 当前位置</div>
+                            <div class="legend-item"><span class="legend-color visited"></span> 已探索</div>
+                            <div class="legend-item"><span class="legend-color locked"></span> 未解锁</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 笔记面板 -->
+                <div class="panel notebook-panel" id="notebook-panel">
+                    <div class="panel-header">
+                        <h3><i class="fas fa-book"></i> 调查笔记</h3>
+                        <button class="panel-close" id="close-notebook"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div class="panel-content">
+                        <div class="clues-list" id="clues-list">
+                            <!-- 线索列表将通过JavaScript动态生成 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部状态栏 -->
+        <footer class="game-footer">
+            <div class="footer-left">
+                <div class="player-info">
+                    <span class="player-name">林墨</span>
+                    <span class="player-title">土木工程专业学生</span>
+                </div>
+                <div class="game-progress">
+                    进度: <span id="progress-value">0%</span>
+                </div>
+            </div>
+            <div class="footer-center">
+                <div class="navigation-buttons">
+                    <button class="nav-btn" id="btn-north" disabled><i class="fas fa-arrow-up"></i> 北</button>
+                    <button class="nav-btn" id="btn-west" disabled><i class="fas fa-arrow-left"></i> 西</button>
+                    <button class="nav-btn" id="btn-east" disabled><i class="fas fa-arrow-right"></i> 东</button>
+                    <button class="nav-btn" id="btn-south" disabled><i class="fas fa-arrow-down"></i> 南</button>
+                </div>
+            </div>
+            <div class="footer-right">
+                <div class="system-info">
+                    <span class="version">v1.0</span>
+                    <span class="autosave" id="autosave-status"><i class="fas fa-save"></i> 自动保存: 开启</span>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- 模态对话框 -->
+    <div class="modal" id="dialog-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="dialog-npc-name">对话</h3>
+                <button class="modal-close" id="close-dialog"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="dialog-content" id="dialog-content">
+                    <!-- 对话内容将通过JavaScript动态填充 -->
+                </div>
+                <div class="dialog-options" id="dialog-options">
+                    <!-- 对话选项将通过JavaScript动态生成 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="hint-modal">
+        <div class="modal-content hint-modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-lightbulb"></i> 提示</h3>
+                <button class="modal-close" id="close-hint"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="hint-content" id="hint-content">
+                    <!-- 提示内容将通过JavaScript动态填充 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="item-modal">
+        <div class="modal-content item-modal">
+            <div class="modal-header">
+                <h3 id="item-modal-title">道具详情</h3>
+                <button class="modal-close" id="close-item-modal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="item-modal-content" id="item-modal-content">
+                    <!-- 道具详情内容将通过JavaScript动态填充 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 交互对象详情模态框 -->
+    <div class="modal" id="interactive-modal">
+        <div class="modal-content interactive-modal">
+            <div class="modal-header">
+                <h3 id="interactive-modal-title">交互对象</h3>
+                <button class="modal-close" id="close-interactive"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="interactive-modal-content" id="interactive-modal-content">
+                    <!-- 交互对象详情内容将通过JavaScript动态填充 -->
+                </div>
+                <div class="interactive-modal-actions" id="interactive-modal-actions">
+                    <!-- 交互操作按钮将通过JavaScript动态生成 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 加载遮罩 -->
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-content">
+            <div class="loading-spinner">
+                <div class="yin-yang"></div>
+            </div>
+            <div class="loading-text">加载游戏中...</div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+# .gitattributes
+# 为所有文本文件启用自动行尾规范化
+* text=auto
+
+# 强制指定类型文件在提交到仓库时使用 LF
+*.js      text eol=lf
+*.json    text eol=lf
+*.md      text eol=lf
+*.txt     text eol=lf
+*.css     text eol=lf
+*.html    text eol=lf
+
+# 声明二进制文件，禁止 Git 对其做任何转换
+*.png     binary
+*.jpg     binary
+*.ico     binary
