@@ -746,6 +746,10 @@ class AdventureGame {
 
         // 更新位置信息
         document.getElementById('location-name').textContent = location.name;
+
+        // 更新场景图片
+        this.updateSceneImage(locationId);
+
         const sceneDescriptionHTML = this.processDescription(location.description, location.interactives || []);
         document.getElementById('scene-description').innerHTML = sceneDescriptionHTML;
 
@@ -765,6 +769,74 @@ class AdventureGame {
 
         // 检查任务触发
         this.checkQuestTriggers(locationId);
+    }
+
+    /**
+     * 更新场景图片
+     */
+    updateSceneImage(locationId) {
+        // 场景图片映射表
+        const sceneImageMap = {
+            'college_dorm': 'college_dorm.jpg',
+            'subway_station': 'subway_station.jpg',
+            'train_station': 'train_station.jpg',
+            'mountain_road': 'mountain_road.jpg'
+            // 添加更多场景的图片映射
+        };
+
+        const imageContainer = document.getElementById('scene-image-container');
+
+        // 如果有映射的图片文件，尝试加载
+        if (sceneImageMap[locationId]) {
+            const imageUrl = `assets/scenes/${sceneImageMap[locationId]}`;
+
+            // 创建图片元素
+            const img = new Image();
+            img.src = imageUrl;
+            img.alt = `场景：${locationId}`;
+            img.onload = () => {
+                // 图片加载成功，替换占位符
+                imageContainer.innerHTML = '';
+                imageContainer.appendChild(img);
+                // 添加淡入效果
+                setTimeout(() => {
+                    img.classList.add('loaded');
+                }, 10);
+                console.log(`场景图片加载成功: ${imageUrl}`);
+            };
+            img.onerror = () => {
+                // 图片加载失败，显示占位符
+                console.warn(`场景图片加载失败: ${imageUrl}`);
+                this.showSceneImagePlaceholder(imageContainer, locationId);
+            };
+        } else {
+            // 没有映射的图片，显示占位符
+            this.showSceneImagePlaceholder(imageContainer, locationId);
+        }
+    }
+
+    /**
+     * 显示场景图片占位符
+     */
+    showSceneImagePlaceholder(container, locationId) {
+        // 场景描述映射，用于占位符文本
+        const sceneDescriptions = {
+            'college_dorm': '大学宿舍 - 城市冬日的暮色',
+            'subway_station': '地铁站 - 晚高峰的人群',
+            'train_station': '火车站候车厅 - 电子显示屏闪烁',
+            'mountain_road': '山路 - 暴雪中的蜿蜒道路'
+            // 添加更多场景描述
+        };
+
+        const description = sceneDescriptions[locationId] || '场景图片';
+
+        container.innerHTML = `
+            <div class="scene-image-placeholder">
+                <i class="fas fa-image"></i>
+                <span>${description}</span>
+                <span style="font-size: 12px; margin-top: 5px; color: var(--color-text-muted);">(图片占位符)</span>
+            </div>
+        `;
     }
 
     /**
@@ -1119,8 +1191,22 @@ class AdventureGame {
      * 更新导航按钮状态
      */
     updateNavigationButtons(location) {
-        const directions = ['north', 'south', 'east', 'west'];
-        directions.forEach(dir => {
+        // 标准方向映射
+        const standardDirections = ['north', 'south', 'east', 'west'];
+
+        // 特殊方向显示名称映射
+        const specialDirectionNames = {
+            'leave': '离开',
+            'back': '返回',
+            'board_train': '登车',
+            'enter': '进入',
+            'exit': '退出',
+            'up': '上',
+            'down': '下'
+        };
+
+        // 更新标准方向按钮
+        standardDirections.forEach(dir => {
             const btn = document.getElementById(`btn-${dir}`);
             const exit = location.exits.find(e => e.direction === dir);
             if (exit) {
@@ -1131,6 +1217,39 @@ class AdventureGame {
                 btn.title = "此方向无路可走";
             }
         });
+
+        // 处理特殊方向按钮
+        const specialContainer = document.getElementById('special-nav-buttons');
+        specialContainer.innerHTML = ''; // 清空之前的特殊方向按钮
+
+        // 获取所有特殊方向出口（非标准方向）
+        const specialExits = location.exits.filter(exit =>
+            !standardDirections.includes(exit.direction)
+        );
+
+        // 创建特殊方向按钮
+        specialExits.forEach(exit => {
+            const direction = exit.direction;
+            const displayName = specialDirectionNames[direction] || direction;
+
+            const btn = document.createElement('button');
+            btn.className = 'special-nav-btn';
+            btn.dataset.direction = direction;
+            btn.innerHTML = `<i class="fas fa-arrow-right"></i> ${displayName}`;
+            btn.title = `前往: ${exit.description}`;
+
+            // 绑定点击事件
+            btn.addEventListener('click', () => this.move(direction));
+
+            specialContainer.appendChild(btn);
+        });
+
+        // 如果没有特殊方向，隐藏容器
+        if (specialExits.length === 0) {
+            specialContainer.style.display = 'none';
+        } else {
+            specialContainer.style.display = 'flex';
+        }
     }
 
     /**

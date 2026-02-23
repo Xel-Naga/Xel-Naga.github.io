@@ -51,6 +51,11 @@
     --font-heading: 'Ma Shan Zheng', 'Noto Serif SC', serif;
     --font-body: 'Noto Serif SC', serif;
     --font-mono: 'ZCOOL QingKe HuangYou', monospace;
+
+    /* 道教风格背景图案 - 优化版本，暗色但可见 */
+    --pattern-cloud: url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22100%22%20height%3D%22100%22%20viewBox%3D%220%200%20100%20100%22%3E%3Cpath%20d%3D%22M20%2C40%20Q30%2C20%2040%2C40%20Q50%2C20%2060%2C40%20Q70%2C20%2080%2C40%22%20fill%3D%22none%22%20stroke%3D%22rgba(139%2C0%2C0%2C0.3)%22%20stroke-width%3D%221.5%22%20opacity%3D%220.6%22%2F%3E%3C%2Fsvg%3E');
+    --pattern-yinyang: url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22100%22%20height%3D%22100%22%20viewBox%3D%220%200%20100%20100%22%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2250%22%20r%3D%2240%22%20fill%3D%22none%22%20stroke%3D%22rgba(139%2C0%2C0%2C0.4)%22%20stroke-width%3D%221.5%22%20opacity%3D%220.6%22%2F%3E%3Cpath%20d%3D%22M50%2C10%20A40%2C40%200%200%2C1%2050%2C90%20A20%2C20%200%200%2C0%2050%2C50%20A20%2C20%200%200%2C1%2050%2C10%22%20fill%3D%22rgba(139%2C0%2C0%2C0.25)%22%20opacity%3D%220.6%22%2F%3E%3C%2Fsvg%3E');
+    --pattern-taoist: url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22200%22%20height%3D%22200%22%20viewBox%3D%220%200%20200%20200%22%3E%3Cpath%20d%3D%22M100%2C20%20L180%2C180%20L20%2C180%20Z%22%20fill%3D%22none%22%20stroke%3D%22rgba(139%2C0%2C0%2C0.25)%22%20stroke-width%3D%221.5%22%20opacity%3D%220.6%22%2F%3E%3Ccircle%20cx%3D%22100%22%20cy%3D%22100%22%20r%3D%2230%22%20fill%3D%22none%22%20stroke%3D%22rgba(139%2C0%2C0%2C0.25)%22%20stroke-width%3D%221.5%22%20opacity%3D%220.6%22%2F%3E%3C%2Fsvg%3E');
 }
 
 /* 基础样式重置 */
@@ -81,6 +86,11 @@ body {
     max-width: 1600px;
     margin: 0 auto;
     background-color: var(--color-bg-main);
+    background-image: var(--pattern-taoist), var(--pattern-yinyang);
+    background-size: 400px 400px, 300px 300px;
+    background-position: center, 10% 20%;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
     box-shadow: var(--shadow-heavy);
     position: relative;
     overflow: hidden;
@@ -93,6 +103,10 @@ body {
     align-items: center;
     padding: 12px 24px;
     background-color: var(--color-bg-secondary);
+    background-image: var(--pattern-cloud), var(--pattern-yinyang);
+    background-size: 200px 200px, 150px 150px;
+    background-position: 10% 50%, 90% 50%;
+    background-repeat: no-repeat;
     border-bottom: 2px solid var(--color-primary);
     position: relative;
     overflow: hidden;
@@ -122,11 +136,28 @@ body {
 
 .game-title {
     font-family: var(--font-heading);
-    font-size: 24px;
-    color: var(--color-text-primary);
+    font-size: 26px;
+    color: var(--color-text-highlight);
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
+    text-shadow:
+        0 0 5px rgba(139, 0, 0, 0.5),
+        0 0 10px rgba(139, 0, 0, 0.3),
+        0 2px 0 rgba(0, 0, 0, 0.5);
+    position: relative;
+    padding: 5px 15px;
+    background:
+        var(--pattern-cloud),
+        linear-gradient(to right, rgba(139, 0, 0, 0.1), rgba(0, 0, 0, 0.3), rgba(139, 0, 0, 0.1));
+    background-size: 300px 300px, auto;
+    background-position: center center;
+    background-repeat: no-repeat;
+    border-radius: var(--border-radius);
+    border: 1px solid rgba(139, 0, 0, 0.3);
+    box-shadow:
+        inset 0 0 20px rgba(0, 0, 0, 0.5),
+        0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .game-title i {
@@ -189,10 +220,17 @@ body {
 /* 场景容器 */
 .scene-container {
     background-color: var(--color-bg-panel);
+    background-image: var(--pattern-cloud), var(--pattern-taoist);
+    background-size: 400px 400px, 300px 300px;
+    background-position: right bottom, left top;
+    background-repeat: no-repeat;
     border-radius: var(--border-radius);
     border: 1px solid var(--border-color);
     box-shadow: var(--shadow-light);
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 400px;
 }
 
 .scene-header {
@@ -202,6 +240,7 @@ body {
     padding: 12px 20px;
     background-color: rgba(139, 0, 0, 0.1);
     border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
 }
 
 .scene-header h2 {
@@ -221,13 +260,77 @@ body {
     color: var(--color-text-secondary);
 }
 
+/* 场景图片容器 */
+.scene-image-container {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 9/16; /* 9:16长宽比 */
+    background-color: rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+.scene-image-container img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+
+.scene-image-container img.loaded {
+    opacity: 1;
+}
+
+.scene-image-placeholder {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-secondary);
+    gap: 15px;
+    background: linear-gradient(135deg, rgba(139, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0.2) 100%);
+}
+
+.scene-image-placeholder i {
+    font-size: 48px;
+    color: var(--color-text-muted);
+}
+
+.scene-image-placeholder span {
+    font-size: 14px;
+    text-align: center;
+}
+
 .scene-description {
     padding: 20px;
     line-height: 1.8;
     font-size: 17px;
-    min-height: 200px;
-    max-height: 400px;
+    flex: 1;
     overflow-y: auto;
+    min-height: 200px;
+}
+
+/* 场景导航区域 */
+.scene-navigation {
+    padding: 15px 20px;
+    background-color: rgba(139, 0, 0, 0.05);
+    border-top: 1px solid rgba(139, 0, 0, 0.2);
+    flex-shrink: 0;
+}
+
+.scene-navigation .navigation-container {
+    margin: 0 auto;
 }
 
 /* 交互标注颜色样式 */
@@ -279,6 +382,10 @@ body {
 /* 操作反馈区域 */
 .feedback-container {
     background-color: var(--color-bg-panel);
+    background-image: var(--pattern-cloud), var(--pattern-taoist);
+    background-size: 200px 200px, 200px 200px;
+    background-position: left top, right bottom;
+    background-repeat: no-repeat;
     border-radius: var(--border-radius);
     border: 1px solid var(--border-color);
     box-shadow: var(--shadow-light);
@@ -355,8 +462,9 @@ body {
     background-color: rgba(231, 76, 60, 0.05);
 }
 
-/* 命令输入区域 */
+/* 命令输入区域 - 隐藏 */
 .input-container {
+    display: none;
     background-color: var(--color-bg-panel);
     border-radius: var(--border-radius);
     border: 1px solid var(--border-color);
@@ -439,6 +547,10 @@ body {
     padding: 20px;
     gap: 20px;
     background-color: var(--color-bg-secondary);
+    background-image: var(--pattern-yinyang), var(--pattern-taoist);
+    background-size: 250px 250px, 220px 220px;
+    background-position: left top, right bottom;
+    background-repeat: no-repeat;
     border-left: 1px solid var(--border-color);
     overflow-y: auto;
 }
@@ -490,6 +602,10 @@ body {
 /* 面板通用样式 */
 .panel {
     background-color: var(--color-bg-panel);
+    background-image: var(--pattern-cloud), var(--pattern-yinyang);
+    background-size: 200px 200px, 150px 150px;
+    background-position: right bottom, left top;
+    background-repeat: no-repeat;
     border-radius: var(--border-radius);
     border: 1px solid var(--border-color);
     box-shadow: var(--shadow-light);
@@ -805,10 +921,67 @@ body {
     justify-content: center;
 }
 
-.navigation-buttons {
+.footer-navigation-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    padding: 5px 12px;
+    background-color: rgba(0, 0, 0, 0.1);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color-light);
+}
+
+.footer-navigation-info i {
+    color: var(--color-info);
+}
+
+.navigation-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.standard-nav-buttons {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 8px;
+}
+
+.special-nav-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.special-nav-btn {
+    padding: 8px 15px;
+    background-color: rgba(52, 152, 219, 0.1); /* 蓝色调，区别于标准按钮 */
+    border: 1px solid var(--color-info);
+    border-radius: var(--border-radius);
+    color: var(--color-text-primary);
+    cursor: pointer;
+    font-size: 13px;
+    transition: all var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    min-width: 70px;
+}
+
+.special-nav-btn:hover:not(:disabled) {
+    background-color: rgba(52, 152, 219, 0.3);
+    border-color: var(--color-info);
+}
+
+.special-nav-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
 }
 
 .nav-btn {
@@ -1145,6 +1318,13 @@ body {
     color: var(--color-text-primary);
 }
 
+/* 桌面端优化 */
+@media (min-width: 1200px) {
+    .scene-image-container {
+        max-height: 400px; /* 限制最大高度 */
+    }
+}
+
 /* 响应式设计 */
 @media (max-width: 1200px) {
     .main-content {
@@ -1187,7 +1367,7 @@ body {
         width: 100%;
     }
 
-    .navigation-buttons {
+    .navigation-container {
         justify-content: center;
     }
 
@@ -1197,6 +1377,68 @@ body {
 
     .quick-buttons {
         grid-template-columns: repeat(4, 1fr);
+    }
+
+    /* 移动端调整场景图片 */
+    .scene-image-container {
+        aspect-ratio: 16/9; /* 在移动端使用更宽的比例 */
+    }
+
+    .scene-description {
+        max-height: 300px; /* 减少最大高度 */
+        min-height: 150px; /* 减少最小高度 */
+        font-size: 16px; /* 稍微减小字体 */
+        padding: 15px;
+    }
+
+    /* 调整游戏区域间距 */
+    .game-area {
+        gap: 15px;
+        padding: 15px;
+    }
+
+    /* 调整反馈区域 */
+    .feedback-content {
+        max-height: 200px;
+    }
+
+    /* 调整面板在移动端的宽度 */
+    .panel {
+        min-width: 280px;
+    }
+
+    /* 场景导航在移动端调整 */
+    .scene-navigation {
+        padding: 12px 15px;
+    }
+
+    .scene-navigation .standard-nav-buttons {
+        grid-template-columns: repeat(4, 1fr); /* 移动端将4个方向按钮排成一行 */
+    }
+
+    .scene-navigation .special-nav-buttons {
+        margin-top: 8px;
+    }
+
+    /* 移动端减少背景图案强度 */
+    .game-header {
+        background-size: 150px 150px, 100px 100px;
+    }
+
+    .scene-container {
+        background-size: 200px 200px, 150px 150px;
+    }
+
+    .sidebar {
+        background-size: 150px 150px, 120px 120px;
+    }
+
+    .panel {
+        background-size: 100px 100px, 80px 80px;
+    }
+
+    .feedback-container {
+        background-size: 80px 80px, 60px 60px;
     }
 }
 
@@ -1216,6 +1458,44 @@ body {
     .scene-description {
         font-size: 15px;
         padding: 15px;
+        max-height: 250px; /* 在非常小的屏幕上进一步减少高度 */
+    }
+
+    .scene-image-container {
+        aspect-ratio: 4/3; /* 在非常小的屏幕上使用更宽的比例 */
+    }
+
+    .scene-image-placeholder i {
+        font-size: 36px;
+    }
+
+    .scene-image-placeholder span {
+        font-size: 13px;
+    }
+
+    .navigation-container {
+        gap: 6px;
+    }
+
+    .standard-nav-buttons,
+    .special-nav-buttons {
+        gap: 6px;
+    }
+
+    .nav-btn,
+    .special-nav-btn {
+        padding: 6px 10px;
+        font-size: 11px;
+        min-width: 55px;
+    }
+
+    /* 场景导航在小屏幕上的进一步优化 */
+    .scene-navigation .standard-nav-buttons {
+        grid-template-columns: repeat(2, 1fr); /* 小屏幕回到2x2网格 */
+    }
+
+    .scene-navigation {
+        padding: 10px 12px;
     }
 
     .input-area {
@@ -1224,6 +1504,94 @@ body {
 
     #send-command {
         width: 100%;
+    }
+
+    /* 小屏幕进一步减少背景图案强度 */
+    .game-header {
+        background-size: 100px 100px, 80px 80px;
+    }
+
+    .scene-container {
+        background-size: 150px 150px, 120px 120px;
+    }
+
+    .sidebar {
+        background-size: 120px 120px, 100px 100px;
+    }
+
+    .panel {
+        background-size: 80px 80px, 60px 60px;
+    }
+
+    .feedback-container {
+        background-size: 60px 60px, 50px 50px;
+    }
+
+    .game-container {
+        background-size: 200px 200px, 150px 150px;
+    }
+
+    /* 手机竖屏优化 */
+    .game-title {
+        font-size: 20px;
+        padding: 4px 10px;
+        gap: 8px;
+        background:
+            var(--pattern-cloud),
+            linear-gradient(to right, rgba(139, 0, 0, 0.1), rgba(0, 0, 0, 0.2), rgba(139, 0, 0, 0.1));
+        background-size: 150px 150px, auto;
+        background-position: center center;
+        box-shadow: none;
+    }
+
+    .game-header {
+        padding: 10px 15px;
+    }
+
+    .header-right {
+        font-size: 12px;
+    }
+
+    .scene-image-container {
+        aspect-ratio: 3/4; /* 更接近竖屏比例 */
+    }
+
+    .scene-description {
+        font-size: 14px;
+        line-height: 1.6;
+        padding: 12px;
+    }
+
+    .feedback-content {
+        font-size: 13px;
+    }
+
+    .footer-navigation-info {
+        font-size: 11px;
+        padding: 4px 8px;
+    }
+
+    .player-name {
+        font-size: 14px;
+    }
+
+    .player-title {
+        font-size: 11px;
+    }
+
+    /* 手机竖屏时sidebar改为垂直堆叠 */
+    .sidebar {
+        flex-direction: column;
+        flex-wrap: nowrap;
+    }
+
+    .panel {
+        min-width: 100%;
+        margin-bottom: 10px;
+    }
+
+    .quick-buttons {
+        grid-template-columns: repeat(4, 1fr); /* 恢复4列，因为垂直布局有更多水平空间 */
     }
 }
 

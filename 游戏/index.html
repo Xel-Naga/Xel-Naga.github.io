@@ -41,9 +41,34 @@
                         <h2><i class="fas fa-map-marker-alt"></i> <span id="location-name">当前位置</span></h2>
                         <div class="location-path" id="location-path">山门 > 前院</div>
                     </div>
+                    <!-- 场景图片 -->
+                    <div class="scene-image-container" id="scene-image-container">
+                        <div class="scene-image-placeholder">
+                            <i class="fas fa-image"></i>
+                            <span>场景图片加载中...</span>
+                        </div>
+                    </div>
                     <div class="scene-description" id="scene-description">
                         <!-- 场景描述将通过JavaScript动态填充 -->
                         加载中...
+                    </div>
+
+                    <!-- 场景导航按钮 -->
+                    <div class="scene-navigation">
+                        <div class="navigation-container">
+                            <!-- 标准方向按钮 -->
+                            <div class="standard-nav-buttons">
+                                <button class="nav-btn" id="btn-north" disabled><i class="fas fa-arrow-up"></i> 北</button>
+                                <button class="nav-btn" id="btn-west" disabled><i class="fas fa-arrow-left"></i> 西</button>
+                                <button class="nav-btn" id="btn-east" disabled><i class="fas fa-arrow-right"></i> 东</button>
+                                <button class="nav-btn" id="btn-south" disabled><i class="fas fa-arrow-down"></i> 南</button>
+                            </div>
+
+                            <!-- 特殊方向按钮容器 -->
+                            <div class="special-nav-buttons" id="special-nav-buttons">
+                                <!-- 特殊方向按钮将通过JavaScript动态生成 -->
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -181,11 +206,9 @@
                 </div>
             </div>
             <div class="footer-center">
-                <div class="navigation-buttons">
-                    <button class="nav-btn" id="btn-north" disabled><i class="fas fa-arrow-up"></i> 北</button>
-                    <button class="nav-btn" id="btn-west" disabled><i class="fas fa-arrow-left"></i> 西</button>
-                    <button class="nav-btn" id="btn-east" disabled><i class="fas fa-arrow-right"></i> 东</button>
-                    <button class="nav-btn" id="btn-south" disabled><i class="fas fa-arrow-down"></i> 南</button>
+                <div class="footer-navigation-info">
+                    <i class="fas fa-directions"></i>
+                    <span>使用上方方向按钮移动</span>
                 </div>
             </div>
             <div class="footer-right">
