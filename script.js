@@ -21,8 +21,18 @@ class AdventureGame {
                 location: "college_dorm",
                 inventory: [],
                 clues: [],
-                sanity: 100,
-                health: 100,
+                // 生理状态
+                stamina: { current: 100, max: 100 },  // 体力
+                body_temperature: { current: 37.0, normal_range: [36, 38] }, // 体温 (°C)
+                // 心理状态
+                sanity: { current: 100, max: 100 },   // 理智
+                // 隐藏状态
+                hidden_states: {
+                    intuition: 0,     // 直觉值 (0-100)
+                    suspicion: 0,     // 疑心值 (0-100)
+                    luck: 50,         // 运气值 (0-100)
+                    trauma_level: 0   // 创伤等级
+                },
                 discoveredLocations: new Set(["college_dorm"]),
                 currentQuest: null,
                 quests: {
@@ -31,7 +41,9 @@ class AdventureGame {
                     failed: []
                 },
                 flags: new Map(),
-                relationships: new Map()
+                relationships: new Map(),
+                dialogueHistory: new Set(),
+                decisionHistory: []  // 决策历史记录
             },
             world: {
                 time: "15:00",
@@ -59,6 +71,12 @@ class AdventureGame {
         // 当前选中的道具
         this.selectedItem = null;
 
+        // 玩家状态管理器
+        this.statusManager = null; // 将在init()中初始化
+
+        // 决策管理器
+        this.decisionManager = null; // 将在init()中初始化
+
         // 初始化
         this.init();
     }
@@ -75,6 +93,12 @@ class AdventureGame {
         try {
             // 加载游戏数据
             await this.loadGameData();
+
+            // 初始化状态管理器
+            this.statusManager = new PlayerStatusManager(this);
+
+            // 初始化决策管理器
+            this.decisionManager = new DecisionManager(this);
 
             // 初始化UI事件
             this.initUIEvents();
@@ -160,8 +184,8 @@ class AdventureGame {
                     description: "半开的登山包，里面已经装了一些工具：卷尺、激光测距仪、小型水平仪、结构力学笔记。",
                     actions: ["examine", "take_item"],
                     result: {
-                        item: "item_tools",
-                        feedback: "你检查了登山包，里面是你的工程测量工具。"
+                        item: "item_backpack",
+                        feedback: "你拿起了登山包，里面装有你的工程测量工具和个人物品。"
                     }
                 },
                 {
@@ -299,6 +323,46 @@ class AdventureGame {
             acquired_from: "初始携带",
             icon: "fas fa-tools",
             color: "blue"
+        });
+
+        // 道具数据 - item_backpack
+        this.data.items.set("item_backpack", {
+            id: "item_backpack",
+            name: "登山包",
+            type: "container",
+            description: "你的登山背包，装有衣物和个人用品。",
+            detailed_description: "中等大小的登山包，防水材质。里面装有：\n- 保暖衣物\n- 个人卫生用品\n- 充电宝\n- 手电筒\n- 急救包",
+            usable: false,
+            combinable: false,
+            use_scenes: [],
+            use_effect: "无",
+            disposable: false,
+            droppable: false,
+            weight: 5.0,
+            value: "普通",
+            acquired_from: "初始携带",
+            icon: "fas fa-hiking",
+            color: "brown"
+        });
+
+        // 道具数据 - item_phone
+        this.data.items.set("item_phone", {
+            id: "item_phone",
+            name: "手机",
+            type: "tool",
+            description: "你的智能手机，用于通讯和记录。",
+            detailed_description: "现代智能手机，信号时好时坏。里面有与陈青山的聊天记录，以及一些山区照片。",
+            usable: true,
+            combinable: false,
+            use_scenes: ["查看消息", "拍照记录", "查看时间"],
+            use_effect: "查看信息和拍照",
+            disposable: false,
+            droppable: false,
+            weight: 0.2,
+            value: "普通",
+            acquired_from: "初始携带",
+            icon: "fas fa-mobile-alt",
+            color: "green"
         });
 
         // NPC数据
@@ -670,6 +734,9 @@ class AdventureGame {
         document.getElementById('btn-load').addEventListener('click', () => {
             this.loadGame();
         });
+        document.getElementById('btn-status').addEventListener('click', () => {
+            this.togglePanel('status-panel');
+        });
         document.getElementById('btn-help').addEventListener('click', () => {
             this.showHelp();
         });
@@ -686,6 +753,9 @@ class AdventureGame {
         });
         document.getElementById('close-tasks').addEventListener('click', () => {
             this.togglePanel('tasks-panel', false);
+        });
+        document.getElementById('close-status').addEventListener('click', () => {
+            this.togglePanel('status-panel', false);
         });
         document.getElementById('close-interactive').addEventListener('click', () => {
             document.getElementById('interactive-modal').classList.remove('active');
@@ -715,6 +785,26 @@ class AdventureGame {
             if (target.classList.contains('interactable')) {
                 this.handleInteractiveClick(target);
             }
+        });
+
+        // 状态动作按钮
+        document.getElementById('rest-btn').addEventListener('click', () => {
+            if (this.statusManager) {
+                this.statusManager.rest();
+            }
+        });
+        document.getElementById('warm-up-btn').addEventListener('click', () => {
+            if (this.statusManager) {
+                this.statusManager.warmUp();
+            }
+        });
+        document.getElementById('calm-btn').addEventListener('click', () => {
+            if (this.statusManager) {
+                this.statusManager.calmDown();
+            }
+        });
+        document.getElementById('status-details-btn').addEventListener('click', () => {
+            this.togglePanel('status-panel');
         });
     }
 
@@ -918,8 +1008,26 @@ class AdventureGame {
             return;
         }
 
-        // 显示交互对象模态框
+        // 获取可用操作
+        const availableActions = interactive.actions || [];
+        const isNPC = type === 'npc';
+
+        // NPC总是显示对话菜单
+        if (isNPC) {
+            this.showInteractiveModal(interactive, type);
+            return;
+        }
+
+        // 所有对象点击都显示模态框（显示描述信息）
         this.showInteractiveModal(interactive, type);
+
+        // 如果对象有检查操作，处理检查结果（查看描述即视为检查）
+        const hasExamine = availableActions.includes('examine') || availableActions.includes('examine_item');
+
+        if (hasExamine) {
+            // 处理检查结果（添加线索、反馈等）
+            this.processInteractiveResult(interactive, 'examine');
+        }
     }
 
     /**
@@ -983,16 +1091,8 @@ class AdventureGame {
         // 可用的操作列表
         const availableActions = interactive.actions || [];
 
-        // 操作按钮配置
+        // 操作按钮配置 - 不包含"查看"按钮，因为点击对象已显示描述相当于查看
         const actionButtons = [
-            {
-                id: 'examine',
-                label: '查看',
-                icon: 'fas fa-search',
-                description: '仔细检查这个对象',
-                available: availableActions.includes('examine') || availableActions.includes('examine_item'),
-                handler: () => this.executeInteraction(interactive, type, 'examine')
-            },
             {
                 id: 'talk',
                 label: '交谈',
@@ -1007,7 +1107,11 @@ class AdventureGame {
                 icon: 'fas fa-hand-paper',
                 description: '拾取这个物品',
                 available: availableActions.includes('take') || availableActions.includes('take_item'),
-                handler: () => this.executeInteraction(interactive, type, 'take')
+                handler: () => {
+                    // 使用实际的操作类型
+                    const actionType = availableActions.includes('take_item') ? 'take_item' : 'take';
+                    this.executeInteraction(interactive, type, actionType);
+                }
             },
             {
                 id: 'use',
@@ -1023,7 +1127,11 @@ class AdventureGame {
                 icon: 'fas fa-book',
                 description: '阅读这个物品上的文字',
                 available: availableActions.includes('read') || availableActions.includes('read_message'),
-                handler: () => this.executeInteraction(interactive, type, 'read')
+                handler: () => {
+                    // 使用实际的操作类型
+                    const actionType = availableActions.includes('read_message') ? 'read_message' : 'read';
+                    this.executeInteraction(interactive, type, actionType);
+                }
             },
             {
                 id: 'record',
@@ -1071,6 +1179,52 @@ class AdventureGame {
     }
 
     /**
+     * 显示阅读内容窗口
+     */
+    showReadContent(interactive, type) {
+        console.log(`显示阅读内容: ${interactive.name}`);
+
+        // 使用item-modal作为阅读窗口
+        const modal = document.getElementById('item-modal');
+        const title = document.getElementById('item-modal-title');
+        const content = document.getElementById('item-modal-content');
+
+        // 设置标题
+        title.textContent = `阅读: ${interactive.name}`;
+
+        // 准备阅读内容 - 优先使用read_content属性，没有则使用description
+        let readContent = interactive.read_content || interactive.description || '没有可阅读的内容。';
+
+        // 可以添加格式化的阅读内容
+        const formattedContent = `
+            <div class="read-content">
+                <div class="read-header">
+                    <i class="fas fa-book-reader"></i>
+                    <h4>${interactive.name}</h4>
+                </div>
+                <div class="read-body">
+                    <p>${readContent}</p>
+                </div>
+                <div class="read-footer">
+                    <small><i class="fas fa-clock"></i> ${this.state.world.time}</small>
+                </div>
+            </div>
+        `;
+
+        content.innerHTML = formattedContent;
+
+        // 显示模态框
+        modal.classList.add('active');
+    }
+
+    /**
+     * 关闭阅读窗口
+     */
+    closeReadContent() {
+        document.getElementById('item-modal').classList.remove('active');
+    }
+
+    /**
      * 执行交互操作
      */
     executeInteraction(interactive, elementType, actionType) {
@@ -1078,6 +1232,9 @@ class AdventureGame {
 
         // 调用原有的处理逻辑，使用操作类型作为反馈类型
         this.processInteractiveResult(interactive, actionType);
+
+        // 推进时间（交互消耗时间）
+        this.advanceTime(3);
 
         // 添加操作反馈
         const actionName = this.getActionNameForType(actionType);
@@ -1090,10 +1247,13 @@ class AdventureGame {
     getActionNameForType(actionType) {
         const actionNames = {
             'examine': '检查',
+            'examine_item': '检查',
             'talk': '交谈',
             'take': '拿起',
+            'take_item': '拿起',
             'use': '使用',
             'read': '阅读',
+            'read_message': '阅读',
             'record': '记录'
         };
         return actionNames[actionType] || '操作';
@@ -1109,25 +1269,59 @@ class AdventureGame {
             return;
         }
 
-        // 添加反馈信息
-        if (result.feedback) {
+        // 应用动作消耗（体力、时间等）
+        if (this.statusManager) {
+            // 根据交互类型应用不同的消耗
+            let actionType = 'examine'; // 默认检查消耗
+            switch (type) {
+                case 'examine':
+                case 'examine_item':
+                case 'read':
+                case 'read_message':
+                    actionType = 'examine';
+                    break;
+                case 'take':
+                case 'take_item':
+                case 'carry':
+                    actionType = 'carry_heavy';
+                    break;
+                case 'danger':
+                case 'trap':
+                    actionType = 'solve_puzzle'; // 危险交互消耗更多
+                    break;
+                case 'clue':
+                case 'record':
+                    actionType = 'examine'; // 线索记录消耗
+                    break;
+            }
+
+            this.statusManager.applyActionCost(actionType);
+        }
+
+        // 添加反馈信息（适用于大多数操作，但阅读操作有自己的内容窗口）
+        if (result.feedback && !(type === 'read' || type === 'read_message')) {
             const feedbackType = this.getFeedbackTypeForInteraction(type);
             this.addFeedback(this.getActionName(type), result.feedback, feedbackType);
         }
 
-        // 处理线索
-        if (result.clue) {
+        // 处理线索（只适用于记录操作，检查操作只提供反馈）
+        if (result.clue && type === 'record') {
             this.addClue(result.clue);
         }
 
-        // 处理道具
-        if (result.item) {
+        // 处理道具（只适用于拿起操作）
+        if (result.item && (type === 'take' || type === 'take_item')) {
             this.addItemToInventory(result.item);
         }
 
-        // 处理对话
-        if (result.dialogue) {
+        // 处理对话（只适用于交谈操作）
+        if (result.dialogue && (type === 'talk' || type === 'npc')) {
             this.startDialogue(result.dialogue);
+        }
+
+        // 处理阅读操作 - 显示阅读内容窗口
+        if (type === 'read' || type === 'read_message') {
+            this.showReadContent(interactive, type);
         }
 
         // 其他结果处理可以根据需要添加
@@ -1275,9 +1469,18 @@ class AdventureGame {
         this.state.player.location = exit.target;
         this.addFeedback("移动", `前往${targetLocation.name}。`, "success");
 
+        // 应用移动消耗（体力、时间、环境效果）
+        if (this.statusManager) {
+            this.statusManager.applyActionCost('move');
+        } else {
+            // 备用：推进时间（移动消耗时间）
+            this.advanceTime(5);
+        }
+
         // 渲染新场景
         this.renderScene();
         this.updateUI();
+        this.updateMapDisplay(); // 更新地图显示
     }
 
     /**
@@ -1327,8 +1530,16 @@ class AdventureGame {
             case 'help':
                 this.showHelp();
                 break;
+            case '测试决策':
+            case 'testdecision':
+                if (this.decisionManager) {
+                    this.decisionManager.triggerTestDecision();
+                } else {
+                    this.addFeedback("系统", "决策系统未初始化。", "warning");
+                }
+                break;
             default:
-                this.addFeedback("系统", `未知命令: ${action}。可用的命令: 查看, 前往, 使用, 交谈, 调查, 收集, 帮助。`, "warning");
+                this.addFeedback("系统", `未知命令: ${action}。可用的命令: 查看, 前往, 使用, 交谈, 调查, 收集, 帮助, 测试决策。`, "warning");
         }
 
         // 清空输入框
@@ -1485,8 +1696,15 @@ class AdventureGame {
             const optionBtn = document.createElement('button');
             optionBtn.className = 'dialog-option';
             optionBtn.textContent = branch.player_text;
+
+            // 检查是否已读
+            const branchKey = `${dialogueId}:${branch.player_text}:${branch.npc_response}`;
+            if (this.state.player.dialogueHistory.has(branchKey)) {
+                optionBtn.classList.add('read');
+            }
+
             optionBtn.addEventListener('click', () => {
-                this.processDialogueBranch(dialogue, branch);
+                this.processDialogueBranch(dialogueId, branch);
             });
             dialogOptions.appendChild(optionBtn);
         });
@@ -1497,9 +1715,19 @@ class AdventureGame {
     /**
      * 处理对话分支
      */
-    processDialogueBranch(dialogue, branch) {
+    processDialogueBranch(dialogueId, branch) {
+        const dialogue = this.data.dialogues.get(dialogueId);
+        if (!dialogue) {
+            console.error(`对话 ${dialogueId} 不存在`);
+            return;
+        }
+
         const dialogContent = document.getElementById('dialog-content');
         const dialogOptions = document.getElementById('dialog-options');
+
+        // 记录已读对话分支
+        const branchKey = `${dialogueId}:${branch.player_text}:${branch.npc_response}`;
+        this.state.player.dialogueHistory.add(branchKey);
 
         // 显示NPC回应
         dialogContent.innerHTML = `<p><strong>${dialogue.npc_name}:</strong> ${branch.npc_response}</p>`;
@@ -1528,8 +1756,15 @@ class AdventureGame {
                     const optionBtn = document.createElement('button');
                     optionBtn.className = 'dialog-option';
                     optionBtn.textContent = nextBranch.player_text;
+
+                    // 检查是否已读
+                    const branchKey = `${dialogueId}:${nextBranch.player_text}:${nextBranch.npc_response}`;
+                    if (this.state.player.dialogueHistory.has(branchKey)) {
+                        optionBtn.classList.add('read');
+                    }
+
                     optionBtn.addEventListener('click', () => {
-                        this.processDialogueBranch(dialogue, nextBranch);
+                        this.processDialogueBranch(dialogueId, nextBranch);
                     });
                     dialogOptions.appendChild(optionBtn);
                 }
@@ -1918,44 +2153,90 @@ class AdventureGame {
 
         tasksList.innerHTML = '';
 
-        // 计算活跃任务数量
+        // 计算总任务数量（活跃+已完成）
         const activeCount = this.state.player.quests.active.length;
-        taskCount.textContent = activeCount;
+        const completedCount = this.state.player.quests.completed.length;
+        const totalCount = activeCount + completedCount;
+        taskCount.textContent = `${completedCount}/${totalCount}`;
 
-        if (activeCount === 0) {
-            tasksList.innerHTML = '<p class="no-tasks">当前没有活跃任务。</p>';
+        if (totalCount === 0) {
+            tasksList.innerHTML = '<p class="no-tasks">没有任务记录。</p>';
             return;
         }
 
-        // 显示活跃任务
-        this.state.player.quests.active.forEach(questId => {
-            const quest = this.data.quests.get(questId);
-            if (!quest) return;
+        // 先显示活跃任务
+        if (activeCount > 0) {
+            const activeHeader = document.createElement('div');
+            activeHeader.className = 'task-section-header';
+            activeHeader.innerHTML = '<h4><i class="fas fa-spinner"></i> 进行中</h4>';
+            tasksList.appendChild(activeHeader);
 
-            const taskItem = document.createElement('div');
-            taskItem.className = 'task-item active';
+            this.state.player.quests.active.forEach(questId => {
+                const quest = this.data.quests.get(questId);
+                if (!quest) return;
 
-            let stepsHtml = '';
-            quest.steps.forEach(step => {
-                stepsHtml += `
-                    <div class="task-step ${step.completed ? 'completed' : ''}">
-                        <i class="fas fa-${step.completed ? 'check' : 'circle'}"></i>
-                        ${step.description}
+                const taskItem = document.createElement('div');
+                taskItem.className = 'task-item active';
+
+                let stepsHtml = '';
+                quest.steps.forEach(step => {
+                    stepsHtml += `
+                        <div class="task-step ${step.completed ? 'completed' : ''}">
+                            <i class="fas fa-${step.completed ? 'check' : 'circle'}"></i>
+                            ${step.description}
+                        </div>
+                    `;
+                });
+
+                taskItem.innerHTML = `
+                    <div class="task-title">
+                        <i class="fas fa-quest"></i>
+                        ${quest.name}
                     </div>
+                    <div class="task-description">${quest.description}</div>
+                    <div class="task-steps">${stepsHtml}</div>
                 `;
+
+                tasksList.appendChild(taskItem);
             });
+        }
 
-            taskItem.innerHTML = `
-                <div class="task-title">
-                    <i class="fas fa-quest"></i>
-                    ${quest.name}
-                </div>
-                <div class="task-description">${quest.description}</div>
-                <div class="task-steps">${stepsHtml}</div>
-            `;
+        // 显示已完成任务
+        if (completedCount > 0) {
+            const completedHeader = document.createElement('div');
+            completedHeader.className = 'task-section-header';
+            completedHeader.innerHTML = '<h4><i class="fas fa-check-circle"></i> 已完成</h4>';
+            tasksList.appendChild(completedHeader);
 
-            tasksList.appendChild(taskItem);
-        });
+            this.state.player.quests.completed.forEach(questId => {
+                const quest = this.data.quests.get(questId);
+                if (!quest) return;
+
+                const taskItem = document.createElement('div');
+                taskItem.className = 'task-item completed';
+
+                let stepsHtml = '';
+                quest.steps.forEach(step => {
+                    stepsHtml += `
+                        <div class="task-step completed">
+                            <i class="fas fa-check"></i>
+                            ${step.description}
+                        </div>
+                    `;
+                });
+
+                taskItem.innerHTML = `
+                    <div class="task-title">
+                        <i class="fas fa-quest"></i>
+                        ${quest.name}
+                    </div>
+                    <div class="task-description">${quest.description}</div>
+                    <div class="task-steps">${stepsHtml}</div>
+                `;
+
+                tasksList.appendChild(taskItem);
+            });
+        }
     }
 
     /**
@@ -2003,7 +2284,58 @@ class AdventureGame {
             case 'map-panel':
                 this.updateMapDisplay();
                 break;
+            case 'status-panel':
+                this.renderStatusPanel();
+                break;
         }
+    }
+
+    /**
+     * 获取方向的中文显示名称
+     */
+    getDirectionDisplayName(direction) {
+        const directionMap = {
+            'north': '北',
+            'south': '南',
+            'east': '东',
+            'west': '西',
+            'northeast': '东北',
+            'northwest': '西北',
+            'southeast': '东南',
+            'southwest': '西南',
+            'leave': '离开',
+            'back': '返回',
+            'board_train': '登车',
+            'enter': '进入',
+            'exit': '退出',
+            'up': '上',
+            'down': '下'
+        };
+        return directionMap[direction] || direction;
+    }
+
+    /**
+     * 根据坐标计算主要方向
+     */
+    calculateDirectionFromCoords(fromCoord, toCoord) {
+        const dx = toCoord.x - fromCoord.x;
+        const dy = toCoord.y - fromCoord.y;
+
+        // 优先考虑主要方向
+        if (Math.abs(dx) > Math.abs(dy) * 1.5) {
+            // 主要水平移动
+            return dx > 0 ? 'east' : 'west';
+        } else if (Math.abs(dy) > Math.abs(dx) * 1.5) {
+            // 主要垂直移动
+            return dy > 0 ? 'south' : 'north';
+        } else {
+            // 对角线移动，选择最接近的方向
+            if (dx > 0 && dy < 0) return 'northeast';
+            if (dx > 0 && dy > 0) return 'southeast';
+            if (dx < 0 && dy < 0) return 'northwest';
+            if (dx < 0 && dy > 0) return 'southwest';
+        }
+        return 'unknown';
     }
 
     /**
@@ -2012,20 +2344,118 @@ class AdventureGame {
     updateMapDisplay() {
         const mapDisplay = document.getElementById('map-display');
 
-        // 简单的地图显示
-        const locations = Array.from(this.data.locations.values());
-        let mapHtml = '<div class="map-simple">';
+        // 标准方向列表（用于判断是否显示地理方向）
+        const standardDirections = ['north', 'south', 'east', 'west', 'northeast', 'northwest', 'southeast', 'southwest'];
 
-        locations.forEach(location => {
-            const isCurrent = location.id === this.state.player.location;
-            const isDiscovered = this.state.player.discoveredLocations.has(location.id);
+        // 定义位置坐标（遵循上北下南的绝对方位）
+        const locationCoordinates = {
+            'college_dorm': { x: 0, y: 0, name: '大学宿舍' },
+            'subway_station': { x: 1, y: 0, name: '地铁站' },
+            'train_station': { x: 1, y: -1, name: '火车站候车厅' },
+            'mountain_bus': { x: 0, y: -1, name: '山区巴士' },
+            'county_station': { x: 2, y: 0, name: '县城车站' },
+            'mountain_road': { x: 1, y: -2, name: '山路' }
+        };
 
-            if (isDiscovered) {
-                mapHtml += `<div class="map-location ${isCurrent ? 'current' : ''}">${location.name}</div>`;
+        // 创建地图容器
+        let mapHtml = '<div class="map-container">';
+
+        // 计算地图边界
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        for (const locId in locationCoordinates) {
+            if (this.data.locations.has(locId)) {
+                const coord = locationCoordinates[locId];
+                minX = Math.min(minX, coord.x);
+                maxX = Math.max(maxX, coord.x);
+                minY = Math.min(minY, coord.y);
+                maxY = Math.max(maxY, coord.y);
             }
-        });
+        }
 
+        // 为每个位置创建地图节点
+        for (const locId in locationCoordinates) {
+            if (!this.data.locations.has(locId)) continue;
+
+            const coord = locationCoordinates[locId];
+            const isCurrent = locId === this.state.player.location;
+            const isDiscovered = this.state.player.discoveredLocations.has(locId);
+
+            if (!isDiscovered) continue;
+
+            // 计算相对位置（0-100%）
+            const relX = ((coord.x - minX) / (maxX - minX || 1)) * 80 + 10;
+            const relY = ((coord.y - minY) / (maxY - minY || 1)) * 80 + 10;
+
+            mapHtml += `
+                <div class="map-node ${isCurrent ? 'current' : 'visited'}"
+                     style="left: ${relX}%; top: ${relY}%;"
+                     title="${coord.name}">
+                    <div class="map-node-icon">
+                        <i class="fas fa-${isCurrent ? 'map-marker-alt' : 'map-marker'}"></i>
+                    </div>
+                    <div class="map-node-label">${coord.name}</div>
+                </div>
+            `;
+        }
+
+        // 绘制连接线
+        mapHtml += '<svg class="map-connections" width="100%" height="100%">';
+
+        // 动态生成连接关系
+        const connections = new Set(); // 使用Set避免重复连接
+
+        // 遍历所有位置，从exits中获取连接
+        for (const locId in locationCoordinates) {
+            if (!this.data.locations.has(locId)) continue;
+            if (!this.state.player.discoveredLocations.has(locId)) continue;
+
+            const location = this.data.locations.get(locId);
+            if (!location.exits) continue;
+
+            location.exits.forEach(exit => {
+                const targetId = exit.target;
+                if (!locationCoordinates[targetId]) return;
+                if (!this.data.locations.has(targetId)) return;
+                if (!this.state.player.discoveredLocations.has(targetId)) return;
+
+                // 创建唯一的连接标识符（按字母排序避免重复）
+                const connectionId = [locId, targetId].sort().join('-');
+                if (connections.has(connectionId)) return;
+
+                connections.add(connectionId);
+
+                const fromCoord = locationCoordinates[locId];
+                const toCoord = locationCoordinates[targetId];
+
+                if (!fromCoord || !toCoord) return;
+
+                const fromX = ((fromCoord.x - minX) / (maxX - minX || 1)) * 80 + 10;
+                const fromY = ((fromCoord.y - minY) / (maxY - minY || 1)) * 80 + 10;
+                const toX = ((toCoord.x - minX) / (maxX - minX || 1)) * 80 + 10;
+                const toY = ((toCoord.y - minY) / (maxY - minY || 1)) * 80 + 10;
+
+                // 获取方向显示名称
+                // 如果exit.direction是标准方向，使用它；否则根据坐标计算地理方向
+                let directionToDisplay;
+                if (standardDirections.includes(exit.direction)) {
+                    directionToDisplay = exit.direction;
+                } else {
+                    directionToDisplay = this.calculateDirectionFromCoords(fromCoord, toCoord);
+                }
+                const directionDisplay = this.getDirectionDisplayName(directionToDisplay);
+
+                mapHtml += `
+                    <line x1="${fromX}%" y1="${fromY}%" x2="${toX}%" y2="${toY}%"
+                          class="map-connection" />
+                    <text x="${(fromX + toX) / 2}%" y="${(fromY + toY) / 2}%"
+                          class="map-direction">${directionDisplay}</text>
+                `;
+            });
+        }
+
+        mapHtml += '</svg>';
         mapHtml += '</div>';
+
         mapDisplay.innerHTML = mapHtml;
     }
 
@@ -2049,8 +2479,10 @@ class AdventureGame {
      * 更新UI显示
      */
     updateUI() {
-        // 更新理智值
-        document.getElementById('sanity-value').textContent = this.state.player.sanity;
+        // 更新玩家状态值
+        document.getElementById('stamina-value').textContent = this.state.player.stamina.current;
+        document.getElementById('temperature-value').textContent = this.state.player.body_temperature.current.toFixed(1);
+        document.getElementById('sanity-value').textContent = this.state.player.sanity.current;
 
         // 更新游戏时间
         document.getElementById('game-time').textContent = `${this.state.world.date} ${this.state.world.time}`;
@@ -2064,12 +2496,23 @@ class AdventureGame {
      * 计算游戏进度
      */
     calculateProgress() {
-        // 简单计算：已发现位置数量 / 总位置数量
+        // 计算实际存在于data.locations中的已发现位置数量
+        let validDiscoveredCount = 0;
+        for (const locationId of this.state.player.discoveredLocations) {
+            if (this.data.locations.has(locationId)) {
+                validDiscoveredCount++;
+            }
+        }
+
         const totalLocations = this.data.locations.size;
-        const discoveredCount = this.state.player.discoveredLocations.size;
 
         if (totalLocations === 0) return 0;
-        return Math.round((discoveredCount / totalLocations) * 100);
+
+        // 计算进度，确保不超过100%
+        const rawProgress = (validDiscoveredCount / totalLocations) * 100;
+        const progress = Math.min(100, Math.round(rawProgress));
+
+        return progress;
     }
 
     /**
@@ -2085,6 +2528,139 @@ class AdventureGame {
     }
 
     /**
+     * 渲染状态面板
+     */
+    renderStatusPanel() {
+        const statusDisplay = document.getElementById('status-display');
+        if (!statusDisplay) return;
+
+        const player = this.state.player;
+        let html = `
+            <div class="status-section">
+                <h4><i class="fas fa-heartbeat"></i> 基础状态</h4>
+                <div class="status-item">
+                    <div class="status-label">体力</div>
+                    <div class="status-bar-container">
+                        <div class="status-bar stamina-bar" style="width: ${player.stamina.current / player.stamina.max * 100}%"></div>
+                    </div>
+                    <div class="status-value">${player.stamina.current}/${player.stamina.max}</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-label">理智</div>
+                    <div class="status-bar-container">
+                        <div class="status-bar sanity-bar" style="width: ${player.sanity.current / player.sanity.max * 100}%"></div>
+                    </div>
+                    <div class="status-value">${player.sanity.current}/${player.sanity.max}</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-label">体温</div>
+                    <div class="status-bar-container">
+                        <div class="status-bar temperature-bar" style="width: ${((player.body_temperature.current - 35) / (40 - 35)) * 100}%"></div>
+                    </div>
+                    <div class="status-value">${player.body_temperature.current.toFixed(1)}°C</div>
+                </div>
+            </div>
+            <div class="status-section">
+                <h4><i class="fas fa-brain"></i> 隐藏状态</h4>
+                <div class="status-item">
+                    <div class="status-label">直觉</div>
+                    <div class="status-bar-container">
+                        <div class="status-bar intuition-bar" style="width: ${player.hidden_states.intuition}%"></div>
+                    </div>
+                    <div class="status-value">${player.hidden_states.intuition}%</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-label">疑心</div>
+                    <div class="status-bar-container">
+                        <div class="status-bar suspicion-bar" style="width: ${player.hidden_states.suspicion}%"></div>
+                    </div>
+                    <div class="status-value">${player.hidden_states.suspicion}%</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-label">运气</div>
+                    <div class="status-bar-container">
+                        <div class="status-bar luck-bar" style="width: ${player.hidden_states.luck}%"></div>
+                    </div>
+                    <div class="status-value">${player.hidden_states.luck}%</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-label">创伤等级</div>
+                    <div class="status-bar-container">
+                        <div class="status-bar trauma-bar" style="width: ${player.hidden_states.trauma_level}%"></div>
+                    </div>
+                    <div class="status-value">${player.hidden_states.trauma_level}%</div>
+                </div>
+            </div>
+            <div class="status-section">
+                <h4><i class="fas fa-clipboard-list"></i> 状态效果</h4>
+                <div class="status-effects" id="status-effects">
+                    ${this.getStatusEffectsHTML()}
+                </div>
+            </div>
+        `;
+
+        statusDisplay.innerHTML = html;
+    }
+
+    /**
+     * 获取状态效果HTML
+     */
+    getStatusEffectsHTML() {
+        const player = this.state.player;
+        const effects = [];
+
+        // 体力低警告
+        if (player.stamina.current < 30) {
+            effects.push('<div class="status-effect warning"><i class="fas fa-exclamation-triangle"></i> 体力不足</div>');
+        }
+        if (player.stamina.current < 10) {
+            effects.push('<div class="status-effect danger"><i class="fas fa-skull-crossbones"></i> 极度疲劳</div>');
+        }
+
+        // 体温警告
+        if (player.body_temperature.current < 36.0) {
+            effects.push('<div class="status-effect warning"><i class="fas fa-snowflake"></i> 体温偏低</div>');
+        }
+        if (player.body_temperature.current < 35.0) {
+            effects.push('<div class="status-effect danger"><i class="fas fa-icicles"></i> 体温过低</div>');
+        }
+        if (player.body_temperature.current > 38.0) {
+            effects.push('<div class="status-effect warning"><i class="fas fa-fire"></i> 体温偏高</div>');
+        }
+
+        // 理智警告
+        if (player.sanity.current < 60) {
+            effects.push('<div class="status-effect warning"><i class="fas fa-brain"></i> 精神紧张</div>');
+        }
+        if (player.sanity.current < 30) {
+            effects.push('<div class="status-effect danger"><i class="fas fa-ghost"></i> 理智濒危</div>');
+        }
+
+        // 隐藏状态效果
+        if (player.hidden_states.intuition > 70) {
+            effects.push('<div class="status-effect positive"><i class="fas fa-lightbulb"></i> 直觉敏锐</div>');
+        }
+        if (player.hidden_states.suspicion > 70) {
+            effects.push('<div class="status-effect negative"><i class="fas fa-eye"></i> 疑心重重</div>');
+        }
+        if (player.hidden_states.luck < 20) {
+            effects.push('<div class="status-effect negative"><i class="fas fa-cloud-rain"></i> 运气不佳</div>');
+        }
+        if (player.hidden_states.luck > 80) {
+            effects.push('<div class="status-effect positive"><i class="fas fa-clover"></i> 好运相伴</div>');
+        }
+        if (player.hidden_states.trauma_level > 50) {
+            effects.push('<div class="status-effect negative"><i class="fas fa-band-aid"></i> 心理创伤</div>');
+        }
+
+        if (effects.length === 0) {
+            return '<div class="status-effect normal"><i class="fas fa-check-circle"></i> 状态正常</div>';
+        }
+
+        return effects.join('');
+    }
+
+    /**
      * 保存游戏
      */
     saveGame() {
@@ -2096,7 +2672,8 @@ class AdventureGame {
                         ...this.state.player,
                         discoveredLocations: Array.from(this.state.player.discoveredLocations),
                         flags: Array.from(this.state.player.flags.entries()),
-                        relationships: Array.from(this.state.player.relationships.entries())
+                        relationships: Array.from(this.state.player.relationships.entries()),
+                        dialogueHistory: Array.from(this.state.player.dialogueHistory)
                     },
                     world: {
                         ...this.state.world,
@@ -2154,7 +2731,8 @@ class AdventureGame {
                     ...saveData.state.player,
                     discoveredLocations: new Set(saveData.state.player.discoveredLocations),
                     flags: new Map(saveData.state.player.flags),
-                    relationships: new Map(saveData.state.player.relationships)
+                    relationships: new Map(saveData.state.player.relationships),
+                    dialogueHistory: new Set(saveData.state.player.dialogueHistory || [])
                 },
                 world: {
                     ...saveData.state.world,
@@ -2179,6 +2757,45 @@ class AdventureGame {
             console.error("加载游戏失败:", error);
             this.addFeedback("系统", "加载失败，存档可能已损坏。", "danger");
         }
+    }
+
+    /**
+     * 推进游戏时间
+     * @param {number} minutes 要推进的分钟数
+     */
+    advanceTime(minutes = 5) {
+        // 解析当前时间
+        const [hourStr, minuteStr] = this.state.world.time.split(':');
+        let hour = parseInt(hourStr, 10);
+        let minute = parseInt(minuteStr, 10);
+
+        // 添加分钟
+        minute += minutes;
+
+        // 处理进位
+        while (minute >= 60) {
+            minute -= 60;
+            hour += 1;
+        }
+
+        // 处理24小时制
+        while (hour >= 24) {
+            hour -= 24;
+            // 日期推进一天（简化处理）
+            const date = new Date(this.state.world.date);
+            date.setDate(date.getDate() + 1);
+            this.state.world.date = date.toISOString().split('T')[0];
+        }
+
+        // 格式化时间
+        const hourFormatted = hour.toString().padStart(2, '0');
+        const minuteFormatted = minute.toString().padStart(2, '0');
+        this.state.world.time = `${hourFormatted}:${minuteFormatted}`;
+
+        // 更新时间显示
+        this.updateUI();
+
+        console.log(`时间推进 ${minutes} 分钟，当前时间: ${this.state.world.time}`);
     }
 
     /**
@@ -2214,6 +2831,8 @@ class AdventureGame {
                 <li><strong>线索系统:</strong> 发现线索记录在笔记本中</li>
                 <li><strong>任务系统:</strong> 完成任务推进剧情</li>
                 <li><strong>对话系统:</strong> 选择不同对话分支影响剧情</li>
+                <li><strong>状态系统:</strong> 管理体力、理智、体温等状态属性</li>
+                <li><strong>决策系统:</strong> 关键时刻做出选择，影响剧情走向</li>
             </ul>
 
             <p><strong>提示:</strong></p>
@@ -2221,12 +2840,1150 @@ class AdventureGame {
                 <li>仔细观察环境描述，寻找隐藏线索</li>
                 <li>与所有NPC对话，获取信息和任务</li>
                 <li>合理使用道具，有些谜题需要特定道具</li>
-                <li>注意角色的理智值，遇到恐怖事件会下降</li>
+                <li>注意角色的状态：体力、理智、体温都会影响游戏</li>
+                <li>关键时刻的决策会影响剧情走向和结局</li>
                 <li>定期保存游戏进度</li>
             </ul>
         `;
 
         modal.classList.add('active');
+    }
+}
+
+// ============================================
+// 玩家状态管理器类
+// ============================================
+
+/**
+ * 玩家状态管理器
+ * 负责管理玩家的多维状态属性（体力、理智、体温等）及其变化机制
+ */
+class PlayerStatusManager {
+    constructor(game) {
+        this.game = game;
+        this.state = game.state.player;
+
+        // 状态阈值配置
+        this.thresholds = {
+            stamina: {
+                high: 80,
+                medium: 50,
+                low: 20,
+                critical: 10
+            },
+            sanity: {
+                high: 70,
+                medium: 40,
+                low: 20,
+                critical: 10
+            },
+            temperature: {
+                normal_min: 36,
+                normal_max: 38,
+                mild_hypothermia: 35,
+                moderate_hypothermia: 32,
+                severe_hypothermia: 28
+            }
+        };
+
+        // 状态变化监听器
+        this.listeners = {
+            onStaminaChange: [],
+            onSanityChange: [],
+            onTemperatureChange: [],
+            onThresholdReached: []
+        };
+    }
+
+    /**
+     * 更新体力值
+     * @param {number} delta - 变化量（正数为恢复，负数为消耗）
+     * @param {string} reason - 变化原因
+     */
+    updateStamina(delta, reason = "未知原因") {
+        const oldValue = this.state.stamina.current;
+        this.state.stamina.current = Math.max(0, Math.min(this.state.stamina.max, oldValue + delta));
+
+        const actualDelta = this.state.stamina.current - oldValue;
+        if (actualDelta !== 0) {
+            this.notifyListeners('onStaminaChange', { oldValue, newValue: this.state.stamina.current, delta: actualDelta, reason });
+            this.checkThresholds('stamina', this.state.stamina.current);
+            this.game.updateUI();
+
+            // 记录反馈
+            if (delta < 0) {
+                this.game.addFeedback("状态", `体力消耗${Math.abs(actualDelta)}点 (${reason})`, "info");
+            } else if (delta > 0) {
+                this.game.addFeedback("状态", `体力恢复${actualDelta}点 (${reason})`, "info");
+            }
+        }
+        return actualDelta;
+    }
+
+    /**
+     * 更新理智值
+     * @param {number} delta - 变化量（正数为恢复，负数为降低）
+     * @param {string} reason - 变化原因
+     */
+    updateSanity(delta, reason = "未知原因") {
+        const oldValue = this.state.sanity.current;
+        this.state.sanity.current = Math.max(0, Math.min(this.state.sanity.max, oldValue + delta));
+
+        const actualDelta = this.state.sanity.current - oldValue;
+        if (actualDelta !== 0) {
+            this.notifyListeners('onSanityChange', { oldValue, newValue: this.state.sanity.current, delta: actualDelta, reason });
+            this.checkThresholds('sanity', this.state.sanity.current);
+            this.game.updateUI();
+
+            // 记录反馈
+            if (delta < 0) {
+                this.game.addFeedback("状态", `理智下降${Math.abs(actualDelta)}点 (${reason})`, "warning");
+            } else if (delta > 0) {
+                this.game.addFeedback("状态", `理智恢复${actualDelta}点 (${reason})`, "info");
+            }
+        }
+        return actualDelta;
+    }
+
+    /**
+     * 更新体温
+     * @param {number} delta - 变化量（正数为升温，负数为降温）
+     * @param {string} reason - 变化原因
+     */
+    updateTemperature(delta, reason = "未知原因") {
+        const oldValue = this.state.body_temperature.current;
+        this.state.body_temperature.current = oldValue + delta;
+
+        // 体温限制（30°C - 40°C）
+        this.state.body_temperature.current = Math.max(30, Math.min(40, this.state.body_temperature.current));
+
+        const actualDelta = this.state.body_temperature.current - oldValue;
+        if (Math.abs(actualDelta) > 0.05) { // 忽略微小变化
+            this.notifyListeners('onTemperatureChange', { oldValue, newValue: this.state.body_temperature.current, delta: actualDelta, reason });
+            this.checkThresholds('temperature', this.state.body_temperature.current);
+            this.game.updateUI();
+
+            // 记录反馈
+            if (delta < 0) {
+                this.game.addFeedback("状态", `体温下降${Math.abs(actualDelta).toFixed(1)}°C (${reason})`, "warning");
+            } else if (delta > 0) {
+                this.game.addFeedback("状态", `体温上升${actualDelta.toFixed(1)}°C (${reason})`, "info");
+            }
+        }
+        return actualDelta;
+    }
+
+    /**
+     * 更新隐藏状态
+     * @param {string} stateName - 状态名称（intuition, suspicion, luck, trauma_level）
+     * @param {number} delta - 变化量
+     * @param {string} reason - 变化原因
+     */
+    updateHiddenState(stateName, delta, reason = "未知原因") {
+        if (!this.state.hidden_states.hasOwnProperty(stateName)) {
+            console.error(`未知的隐藏状态: ${stateName}`);
+            return 0;
+        }
+
+        const oldValue = this.state.hidden_states[stateName];
+        this.state.hidden_states[stateName] = Math.max(0, Math.min(100, oldValue + delta));
+
+        const actualDelta = this.state.hidden_states[stateName] - oldValue;
+        if (actualDelta !== 0) {
+            console.log(`隐藏状态 ${stateName} 变化: ${oldValue} -> ${this.state.hidden_states[stateName]} (${reason})`);
+        }
+        return actualDelta;
+    }
+
+    /**
+     * 检查状态阈值
+     * @param {string} stateType - 状态类型
+     * @param {number} currentValue - 当前值
+     */
+    checkThresholds(stateType, currentValue) {
+        const thresholds = this.thresholds[stateType];
+        if (!thresholds) return;
+
+        // 检查是否达到特定阈值
+        let reachedThreshold = null;
+
+        if (stateType === 'stamina') {
+            if (currentValue <= thresholds.critical) reachedThreshold = 'stamina_critical';
+            else if (currentValue <= thresholds.low) reachedThreshold = 'stamina_low';
+            else if (currentValue <= thresholds.medium) reachedThreshold = 'stamina_medium';
+            else if (currentValue >= thresholds.high) reachedThreshold = 'stamina_high';
+        }
+        else if (stateType === 'sanity') {
+            if (currentValue <= thresholds.critical) reachedThreshold = 'sanity_critical';
+            else if (currentValue <= thresholds.low) reachedThreshold = 'sanity_low';
+            else if (currentValue <= thresholds.medium) reachedThreshold = 'sanity_medium';
+            else if (currentValue >= thresholds.high) reachedThreshold = 'sanity_high';
+        }
+        else if (stateType === 'temperature') {
+            if (currentValue <= thresholds.severe_hypothermia) reachedThreshold = 'temperature_severe_hypothermia';
+            else if (currentValue <= thresholds.moderate_hypothermia) reachedThreshold = 'temperature_moderate_hypothermia';
+            else if (currentValue <= thresholds.mild_hypothermia) reachedThreshold = 'temperature_mild_hypothermia';
+            else if (currentValue < thresholds.normal_min) reachedThreshold = 'temperature_low';
+            else if (currentValue > thresholds.normal_max) reachedThreshold = 'temperature_high';
+        }
+
+        if (reachedThreshold) {
+            this.notifyListeners('onThresholdReached', { stateType, threshold: reachedThreshold, value: currentValue });
+        }
+    }
+
+    /**
+     * 应用环境效果
+     * @param {string} environment - 环境类型（indoor, outdoor_blizzard, near_fireplace等）
+     * @param {number} durationMinutes - 持续时间（分钟）
+     */
+    applyEnvironmentEffect(environment, durationMinutes) {
+        const effects = {
+            'outdoor_blizzard': { temperature: -0.5, stamina: -1, sanity: -0.2 },
+            'indoor_no_heating': { temperature: -0.1, stamina: -0.5 },
+            'near_fireplace': { temperature: +1.0, stamina: +0.5, sanity: +0.5 },
+            'dark_room': { sanity: -0.5 },
+            'safe_room': { sanity: +0.3, stamina: +0.3 }
+        };
+
+        const effect = effects[environment];
+        if (!effect) return;
+
+        // 根据持续时间计算总效果
+        const cycles = Math.ceil(durationMinutes / 5); // 每5分钟应用一次效果
+
+        for (let i = 0; i < cycles; i++) {
+            if (effect.temperature) this.updateTemperature(effect.temperature, `环境效果: ${environment}`);
+            if (effect.stamina) this.updateStamina(effect.stamina, `环境效果: ${environment}`);
+            if (effect.sanity) this.updateSanity(effect.sanity, `环境效果: ${environment}`);
+        }
+    }
+
+    /**
+     * 处理动作消耗
+     * @param {string} actionType - 动作类型（move, examine, run, climb等）
+     */
+    applyActionCost(actionType) {
+        const costs = {
+            'move': { stamina: -5, time: 5 },           // 移动消耗
+            'examine': { stamina: -3, time: 3 },        // 检查消耗
+            'run': { stamina: -15, time: 2 },           // 奔跑消耗
+            'climb': { stamina: -20, time: 10 },        // 攀爬消耗
+            'carry_heavy': { stamina: -10, time: 5 },   // 搬运重物
+            'solve_puzzle': { stamina: -8, sanity: -5, time: 15 } // 解谜消耗
+        };
+
+        const cost = costs[actionType];
+        if (!cost) return;
+
+        // 应用消耗
+        if (cost.stamina) this.updateStamina(cost.stamina, `动作消耗: ${actionType}`);
+        if (cost.sanity) this.updateSanity(cost.sanity, `动作消耗: ${actionType}`);
+
+        // 推进时间
+        if (cost.time) {
+            this.game.advanceTime(cost.time);
+        }
+    }
+
+    /**
+     * 检查状态效果（在游戏循环中调用）
+     */
+    checkStatusEffects() {
+        const stamina = this.state.stamina.current;
+        const sanity = this.state.sanity.current;
+        const temperature = this.state.body_temperature.current;
+
+        // 体力过低效果
+        if (stamina <= this.thresholds.stamina.critical) {
+            this.game.addFeedback("警告", "体力严重不足！行动变得极其困难。", "danger");
+        } else if (stamina <= this.thresholds.stamina.low) {
+            this.game.addFeedback("提示", "体力较低，建议休息恢复。", "warning");
+        }
+
+        // 理智过低效果
+        if (sanity <= this.thresholds.sanity.critical) {
+            this.game.addFeedback("警告", "理智濒临崩溃！开始产生严重幻觉。", "danger");
+            // 触发幻觉事件
+            this.triggerHallucination();
+        } else if (sanity <= this.thresholds.sanity.low) {
+            this.game.addFeedback("提示", "理智较低，可能出现轻微幻觉。", "warning");
+        }
+
+        // 体温过低效果
+        if (temperature <= this.thresholds.temperature.severe_hypothermia) {
+            this.game.addFeedback("紧急", "严重失温！生命危险！", "danger");
+            this.updateStamina(-20, "严重失温");
+        } else if (temperature <= this.thresholds.temperature.moderate_hypothermia) {
+            this.game.addFeedback("警告", "中度失温，动作变得迟缓。", "danger");
+            this.updateStamina(-10, "中度失温");
+        } else if (temperature <= this.thresholds.temperature.mild_hypothermia) {
+            this.game.addFeedback("提示", "轻度失温，体力恢复减慢。", "warning");
+        }
+    }
+
+    /**
+     * 触发幻觉（理智过低时）
+     */
+    triggerHallucination() {
+        const hallucinations = [
+            "你似乎看到墙上的影子在蠕动...",
+            "耳边传来低语声，但周围空无一人...",
+            "眼角余光瞥见一个白色身影闪过...",
+            "温度计显示的数字在跳动...37...36...35...28？",
+            "墙上的血迹图案似乎在变化..."
+        ];
+
+        const randomHallucination = hallucinations[Math.floor(Math.random() * hallucinations.length)];
+        this.game.addFeedback("幻觉", randomHallucination, "danger");
+
+        // 进一步降低理智
+        this.updateSanity(-5, "幻觉冲击");
+    }
+
+    /**
+     * 添加状态变化监听器
+     * @param {string} eventType - 事件类型
+     * @param {Function} callback - 回调函数
+     */
+    addListener(eventType, callback) {
+        if (this.listeners[eventType]) {
+            this.listeners[eventType].push(callback);
+        }
+    }
+
+    /**
+     * 通知监听器
+     * @param {string} eventType - 事件类型
+     * @param {Object} data - 事件数据
+     */
+    notifyListeners(eventType, data) {
+        if (this.listeners[eventType]) {
+            this.listeners[eventType].forEach(callback => {
+                try {
+                    callback(data);
+                } catch (error) {
+                    console.error(`状态监听器错误 (${eventType}):`, error);
+                }
+            });
+        }
+    }
+
+    /**
+     * 获取状态摘要
+     * @returns {Object} 状态摘要
+     */
+    getStatusSummary() {
+        return {
+            stamina: {
+                current: this.state.stamina.current,
+                max: this.state.stamina.max,
+                percentage: (this.state.stamina.current / this.state.stamina.max * 100).toFixed(1)
+            },
+            temperature: {
+                current: this.state.body_temperature.current,
+                normal_range: this.state.body_temperature.normal_range,
+                status: this.getTemperatureStatus()
+            },
+            sanity: {
+                current: this.state.sanity.current,
+                max: this.state.sanity.max,
+                percentage: (this.state.sanity.current / this.state.sanity.max * 100).toFixed(1)
+            },
+            hidden_states: { ...this.state.hidden_states }
+        };
+    }
+
+    /**
+     * 获取体温状态描述
+     * @returns {string} 状态描述
+     */
+    getTemperatureStatus() {
+        const temp = this.state.body_temperature.current;
+        const thresholds = this.thresholds.temperature;
+
+        if (temp <= thresholds.severe_hypothermia) return "严重失温";
+        if (temp <= thresholds.moderate_hypothermia) return "中度失温";
+        if (temp <= thresholds.mild_hypothermia) return "轻度失温";
+        if (temp < thresholds.normal_min) return "体温偏低";
+        if (temp > thresholds.normal_max) return "体温偏高";
+        return "正常";
+    }
+
+    /**
+     * 恢复所有状态（用于测试或特殊事件）
+     */
+    restoreAll() {
+        const oldStamina = this.state.stamina.current;
+        const oldSanity = this.state.sanity.current;
+        const oldTemp = this.state.body_temperature.current;
+
+        this.state.stamina.current = this.state.stamina.max;
+        this.state.sanity.current = this.state.sanity.max;
+        this.state.body_temperature.current = 37.0;
+
+        if (oldStamina !== this.state.stamina.max) {
+            this.notifyListeners('onStaminaChange', {
+                oldValue: oldStamina,
+                newValue: this.state.stamina.current,
+                delta: this.state.stamina.max - oldStamina,
+                reason: "完全恢复"
+            });
+        }
+
+        if (oldSanity !== this.state.sanity.max) {
+            this.notifyListeners('onSanityChange', {
+                oldValue: oldSanity,
+                newValue: this.state.sanity.current,
+                delta: this.state.sanity.max - oldSanity,
+                reason: "完全恢复"
+            });
+        }
+
+        if (Math.abs(oldTemp - 37.0) > 0.1) {
+            this.notifyListeners('onTemperatureChange', {
+                oldValue: oldTemp,
+                newValue: 37.0,
+                delta: 37.0 - oldTemp,
+                reason: "体温恢复正常"
+            });
+        }
+
+        this.game.updateUI();
+        this.game.addFeedback("状态", "所有状态已完全恢复。", "info");
+    }
+}
+
+// ============================================
+// 决策管理器类
+// ============================================
+
+/**
+ * 决策管理器
+ * 负责管理关键时刻的动作决策系统
+ */
+class DecisionManager {
+    constructor(game) {
+        this.game = game;
+        this.activeDecision = null;
+        this.decisionHistory = [];
+        this.echoEffects = new Map(); // 决策回响效果
+        this.timerInterval = null;
+        this.timeRemaining = 0;
+        this.totalTime = 0;
+
+        // 决策数据缓存
+        this.decisions = new Map();
+
+        // 加载示例决策数据（实际应从JSON加载）
+        this.loadSampleDecisions();
+    }
+
+    /**
+     * 加载示例决策数据
+     */
+    loadSampleDecisions() {
+        // 示例决策：发现密室入口（危机时刻）
+        const secretDoorDecision = {
+            id: "crisis_secret_door",
+            title: "发现密室入口",
+            trigger_type: "crisis",
+            description: "你在藏经阁书架后发现一道暗门，门缝中透出微弱烛光，同时听到门后隐约的呼吸声。此时已是深夜，道观规定不得夜间随意走动。",
+            time_limit: 30, // 秒
+            consequences: "permanent",
+            options: [
+                {
+                    id: "immediate_investigate",
+                    text: "立即推开暗门查看",
+                    requirements: {
+                        attributes: {
+                            courage: 60,
+                            sanity: 40
+                        },
+                        items: ["lantern"],
+                        flags: []
+                    },
+                    immediate_effects: {
+                        attribute_changes: {
+                            sanity: -15,
+                            stamina: -20
+                        },
+                        flag_set: ["entered_secret_room_night"],
+                        relationship_changes: {
+                            "道长": -20,
+                            "明心": +10
+                        }
+                    },
+                    long_term_consequences: {
+                        unlock_branch: "investigation_aggressive",
+                        close_branch: "diplomatic_solution",
+                        future_triggers: ["night_investigation_series"],
+                        ending_weight: { "truth_ending": +0.3, "redemption_ending": -0.2 }
+                    },
+                    risk_level: "high",
+                    success_probability: 0.7,
+                    failure_consequences: {
+                        caught: {
+                            attribute_changes: { sanity: -25 },
+                            quest_changes: { "main_quest": "delayed" }
+                        }
+                    }
+                },
+                {
+                    id: "report_tomorrow",
+                    text: "先返回房间，明日报告道长",
+                    requirements: {
+                        attributes: {},
+                        items: [],
+                        flags: []
+                    },
+                    immediate_effects: {
+                        attribute_changes: {
+                            sanity: +5
+                        },
+                        flag_set: ["followed_rules"],
+                        relationship_changes: {
+                            "道长": +10
+                        }
+                    },
+                    long_term_consequences: {
+                        unlock_branch: "diplomatic_solution",
+                        future_triggers: ["daytime_investigation"],
+                        ending_weight: { "redemption_ending": +0.2, "truth_ending": -0.1 }
+                    },
+                    risk_level: "low",
+                    success_probability: 1.0
+                },
+                {
+                    id: "observe_and_record",
+                    text: "悄悄观察，记录情况后再决定",
+                    requirements: {
+                        attributes: {
+                            intuition: 30,
+                            patience: 40
+                        },
+                        items: ["notebook"],
+                        flags: []
+                    },
+                    immediate_effects: {
+                        attribute_changes: {
+                            stamina: -10
+                        },
+                        flag_set: ["observed_secret_room"],
+                        relationship_changes: {}
+                    },
+                    long_term_consequences: {
+                        unlock_branch: "investigation_cautious",
+                        future_triggers: ["gather_more_evidence"],
+                        ending_weight: { "balanced_ending": +0.2 }
+                    },
+                    risk_level: "medium",
+                    success_probability: 0.9,
+                    failure_consequences: {
+                        discovered: {
+                            attribute_changes: { sanity: -15 },
+                            flag_set: ["suspicion_raised"]
+                        }
+                    }
+                }
+            ]
+        };
+
+        this.decisions.set(secretDoorDecision.id, secretDoorDecision);
+    }
+
+    /**
+     * 触发决策
+     * @param {string} decisionId - 决策ID
+     * @param {Object} context - 触发上下文
+     * @returns {boolean} 是否成功触发
+     */
+    triggerDecision(decisionId, context = {}) {
+        const decision = this.decisions.get(decisionId);
+        if (!decision) {
+            console.error(`决策 ${decisionId} 不存在`);
+            return false;
+        }
+
+        if (!this.checkRequirements(decision, context)) {
+            console.log(`决策 ${decisionId} 触发条件不满足`);
+            return false;
+        }
+
+        this.activeDecision = decision;
+        this.showDecisionDialog(decision, context);
+        return true;
+    }
+
+    /**
+     * 检查决策触发条件
+     * @param {Object} decision - 决策对象
+     * @param {Object} context - 上下文
+     * @returns {boolean} 是否满足条件
+     */
+    checkRequirements(decision, context) {
+        // 根据决策类型检查条件
+        switch (decision.trigger_type) {
+            case "crisis":
+                // 检查位置、状态、时间等条件
+                return this.checkCrisisConditions(decision, context);
+            case "moral_dilemma":
+                return this.checkMoralDilemmaConditions(decision, context);
+            case "strategic_choice":
+                return this.checkStrategicChoiceConditions(decision, context);
+            default:
+                return true;
+        }
+    }
+
+    /**
+     * 检查危机时刻条件
+     */
+    checkCrisisConditions(decision, context) {
+        // 这里应该根据context检查具体条件
+        // 例如：位置、玩家状态、时间等
+        return true; // 暂时返回true用于测试
+    }
+
+    /**
+     * 显示决策对话框
+     * @param {Object} decision - 决策对象
+     * @param {Object} context - 上下文
+     */
+    showDecisionDialog(decision, context) {
+        const modal = document.getElementById('decision-modal');
+        const title = document.getElementById('decision-title');
+        const description = document.getElementById('decision-description');
+        const optionsContainer = document.getElementById('decision-options');
+
+        // 设置标题和描述
+        title.textContent = decision.title;
+        description.innerHTML = `<p>${decision.description}</p>`;
+
+        // 清空选项容器
+        optionsContainer.innerHTML = '';
+
+        // 生成选项
+        decision.options.forEach(option => {
+            const optionElement = this.createOptionElement(option, context);
+            optionsContainer.appendChild(optionElement);
+        });
+
+        // 设置计时器（如果有时间限制）
+        if (decision.time_limit && decision.time_limit > 0) {
+            this.startTimer(decision.time_limit);
+        }
+
+        // 显示模态框
+        modal.classList.add('active');
+
+        // 添加事件监听器
+        this.bindDecisionEvents();
+    }
+
+    /**
+     * 创建选项元素
+     * @param {Object} option - 选项对象
+     * @param {Object} context - 上下文
+     * @returns {HTMLElement} 选项元素
+     */
+    createOptionElement(option, context) {
+        const div = document.createElement('div');
+        div.className = 'decision-option';
+        div.dataset.optionId = option.id;
+
+        // 检查选项要求是否满足
+        const requirementsMet = this.checkOptionRequirements(option, context);
+        if (!requirementsMet) {
+            div.classList.add('disabled');
+        }
+
+        // 添加风险等级标签
+        let riskLabel = '';
+        if (option.risk_level) {
+            riskLabel = `<span class="risk-level risk-${option.risk_level}">${this.getRiskLevelText(option.risk_level)}</span>`;
+        }
+
+        // 添加选项文本
+        let html = `<div>${option.text}${riskLabel}</div>`;
+
+        // 添加要求描述（如果不满足）
+        if (!requirementsMet) {
+            const reqText = this.getRequirementsText(option.requirements);
+            html += `<div class="requirements">需要：${reqText}</div>`;
+        }
+
+        // 添加成功率（如果有）
+        if (option.success_probability && option.success_probability < 1.0) {
+            const successPercent = Math.round(option.success_probability * 100);
+            html += `<div class="requirements">成功率：${successPercent}%</div>`;
+        }
+
+        div.innerHTML = html;
+        return div;
+    }
+
+    /**
+     * 检查选项要求
+     * @param {Object} option - 选项对象
+     * @param {Object} context - 上下文
+     * @returns {boolean} 是否满足要求
+     */
+    checkOptionRequirements(option, context) {
+        const reqs = option.requirements;
+        if (!reqs) return true;
+
+        // 检查属性要求
+        if (reqs.attributes) {
+            for (const [attr, value] of Object.entries(reqs.attributes)) {
+                // 这里应该检查玩家属性值
+                // 暂时返回true用于测试
+                if (attr === 'courage' && value > 50) {
+                    return false; // 示例：如果勇气要求>50，暂时返回false
+                }
+            }
+        }
+
+        // 检查道具要求
+        if (reqs.items && reqs.items.length > 0) {
+            const inventory = this.game.state.player.inventory;
+            for (const itemId of reqs.items) {
+                if (!inventory.some(item => item.id === itemId)) {
+                    return false;
+                }
+            }
+        }
+
+        // 检查标志要求
+        if (reqs.flags && reqs.flags.length > 0) {
+            const flags = this.game.state.player.flags;
+            for (const flag of reqs.flags) {
+                if (!flags.has(flag)) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * 获取要求文本
+     * @param {Object} requirements - 要求对象
+     * @returns {string} 要求文本
+     */
+    getRequirementsText(requirements) {
+        const parts = [];
+
+        if (requirements.attributes) {
+            for (const [attr, value] of Object.entries(requirements.attributes)) {
+                const attrName = this.getAttributeName(attr);
+                parts.push(`${attrName}≥${value}`);
+            }
+        }
+
+        if (requirements.items && requirements.items.length > 0) {
+            const itemNames = requirements.items.map(itemId => this.getItemName(itemId));
+            parts.push(`需要：${itemNames.join('、')}`);
+        }
+
+        return parts.join('，') || '无特殊要求';
+    }
+
+    /**
+     * 获取属性名称
+     */
+    getAttributeName(attr) {
+        const names = {
+            courage: "勇气",
+            sanity: "理智",
+            stamina: "体力",
+            intuition: "直觉",
+            patience: "耐心"
+        };
+        return names[attr] || attr;
+    }
+
+    /**
+     * 获取道具名称
+     */
+    getItemName(itemId) {
+        // 这里应该从游戏数据获取道具名称
+        const itemNames = {
+            lantern: "灯笼",
+            notebook: "笔记本"
+        };
+        return itemNames[itemId] || itemId;
+    }
+
+    /**
+     * 获取风险等级文本
+     */
+    getRiskLevelText(level) {
+        const texts = {
+            low: "低风险",
+            medium: "中风险",
+            high: "高风险"
+        };
+        return texts[level] || level;
+    }
+
+    /**
+     * 开始计时器
+     * @param {number} seconds - 总秒数
+     */
+    startTimer(seconds) {
+        this.totalTime = seconds;
+        this.timeRemaining = seconds;
+
+        // 更新显示
+        this.updateTimerDisplay();
+
+        // 清除之前的计时器
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+        }
+
+        // 启动新计时器
+        this.timerInterval = setInterval(() => {
+            this.timeRemaining--;
+            this.updateTimerDisplay();
+
+            if (this.timeRemaining <= 0) {
+                this.handleTimeout();
+            }
+        }, 1000);
+    }
+
+    /**
+     * 更新计时器显示
+     */
+    updateTimerDisplay() {
+        const timerProgress = document.getElementById('timer-progress');
+        const timeRemainingSpan = document.getElementById('time-remaining');
+
+        if (timerProgress && timeRemainingSpan) {
+            const percentage = (this.timeRemaining / this.totalTime) * 100;
+            timerProgress.style.width = `${percentage}%`;
+            timeRemainingSpan.textContent = `${this.timeRemaining}秒`;
+
+            // 根据剩余时间改变颜色
+            if (this.timeRemaining <= 10) {
+                timerProgress.style.background = "linear-gradient(90deg, #F44336, #FF5722)";
+            } else if (this.timeRemaining <= 20) {
+                timerProgress.style.background = "linear-gradient(90deg, #FF9800, #FFB74D)";
+            }
+        }
+    }
+
+    /**
+     * 处理超时
+     */
+    handleTimeout() {
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+            this.timerInterval = null;
+        }
+
+        // 关闭决策对话框
+        this.closeDecisionDialog();
+
+        // 记录超时结果
+        this.recordDecision(null, "timeout");
+
+        // 添加反馈
+        this.game.addFeedback("决策", "时间到！未能及时做出决定。", "danger");
+    }
+
+    /**
+     * 绑定决策事件
+     */
+    bindDecisionEvents() {
+        // 选项点击事件
+        document.querySelectorAll('.decision-option:not(.disabled)').forEach(option => {
+            option.addEventListener('click', (e) => {
+                const optionId = e.currentTarget.dataset.optionId;
+                this.handleOptionClick(optionId);
+            });
+        });
+
+        // 关闭按钮事件
+        document.getElementById('close-decision').addEventListener('click', () => {
+            this.closeDecisionDialog();
+        });
+
+        // 提示按钮事件
+        document.getElementById('hint-btn').addEventListener('click', () => {
+            this.showHint();
+        });
+
+        // 属性检查按钮事件
+        document.getElementById('check-attributes-btn').addEventListener('click', () => {
+            this.showAttributeCheck();
+        });
+
+        // 取消按钮事件
+        document.getElementById('cancel-decision-btn').addEventListener('click', () => {
+            this.handleCancel();
+        });
+    }
+
+    /**
+     * 处理选项点击
+     * @param {string} optionId - 选项ID
+     */
+    handleOptionClick(optionId) {
+        const option = this.activeDecision.options.find(opt => opt.id === optionId);
+        if (!option) return;
+
+        // 计算结果
+        const outcome = this.calculateOutcome(option);
+
+        // 应用即时效果
+        this.applyImmediateEffects(option.immediate_effects, outcome);
+
+        // 记录决策历史
+        this.recordDecision(option, outcome);
+
+        // 设置回响效果
+        this.setEchoEffects(option.long_term_consequences);
+
+        // 触发后续事件
+        this.triggerFollowupEvents(option, outcome);
+
+        // 关闭对话框
+        this.closeDecisionDialog();
+
+        // 显示结果反馈
+        this.showResultFeedback(option, outcome);
+    }
+
+    /**
+     * 计算结果
+     * @param {Object} option - 选项对象
+     * @returns {string} 结果类型（success/failure）
+     */
+    calculateOutcome(option) {
+        if (!option.success_probability || option.success_probability >= 1.0) {
+            return "success";
+        }
+
+        // 根据成功率计算结果
+        const random = Math.random();
+        return random <= option.success_probability ? "success" : "failure";
+    }
+
+    /**
+     * 应用即时效果
+     * @param {Object} effects - 效果对象
+     * @param {string} outcome - 结果类型
+     */
+    applyImmediateEffects(effects, outcome) {
+        if (!effects) return;
+
+        // 应用属性变化
+        if (effects.attribute_changes) {
+            for (const [attr, delta] of Object.entries(effects.attribute_changes)) {
+                this.applyAttributeChange(attr, delta);
+            }
+        }
+
+        // 设置标志
+        if (effects.flag_set) {
+            effects.flag_set.forEach(flag => {
+                this.game.state.player.flags.set(flag, true);
+            });
+        }
+
+        // 更新关系
+        if (effects.relationship_changes) {
+            for (const [npc, delta] of Object.entries(effects.relationship_changes)) {
+                this.updateRelationship(npc, delta);
+            }
+        }
+
+        // 如果失败，应用失败后果
+        if (outcome === "failure" && this.activeDecision) {
+            const option = this.activeDecision.options.find(opt => opt.id === this.activeDecision.selectedOption);
+            if (option && option.failure_consequences) {
+                this.applyFailureConsequences(option.failure_consequences);
+            }
+        }
+    }
+
+    /**
+     * 应用属性变化
+     */
+    applyAttributeChange(attr, delta) {
+        if (this.game.statusManager) {
+            switch (attr) {
+                case 'stamina':
+                    this.game.statusManager.updateStamina(delta, "决策影响");
+                    break;
+                case 'sanity':
+                    this.game.statusManager.updateSanity(delta, "决策影响");
+                    break;
+                // 可以添加其他属性
+            }
+        }
+    }
+
+    /**
+     * 更新NPC关系
+     */
+    updateRelationship(npc, delta) {
+        const relationships = this.game.state.player.relationships;
+        const currentValue = relationships.get(npc) || 0;
+        relationships.set(npc, currentValue + delta);
+    }
+
+    /**
+     * 应用失败后果
+     */
+    applyFailureConsequences(consequences) {
+        // 根据后果类型应用不同效果
+        for (const [type, effect] of Object.entries(consequences)) {
+            if (effect.attribute_changes) {
+                for (const [attr, delta] of Object.entries(effect.attribute_changes)) {
+                    this.applyAttributeChange(attr, delta);
+                }
+            }
+        }
+    }
+
+    /**
+     * 记录决策
+     */
+    recordDecision(option, outcome) {
+        const record = {
+            timestamp: new Date().toISOString(),
+            decision_id: this.activeDecision?.id || "timeout",
+            choice_made: option?.text || "超时",
+            outcome: outcome,
+            context: {
+                location: this.game.state.player.location,
+                time: this.game.state.world.time
+            }
+        };
+
+        this.decisionHistory.push(record);
+        this.game.state.player.decisionHistory.push(record);
+    }
+
+    /**
+     * 设置回响效果
+     */
+    setEchoEffects(consequences) {
+        if (!consequences) return;
+
+        // 这里应该实现回响效果的设置
+        // 例如：根据解锁的分支设置未来触发器
+        console.log("设置决策回响效果:", consequences);
+    }
+
+    /**
+     * 触发后续事件
+     */
+    triggerFollowupEvents(option, outcome) {
+        // 这里应该触发后续事件
+        // 例如：解锁新位置、触发新任务等
+        console.log("触发后续事件:", option.id, outcome);
+    }
+
+    /**
+     * 显示结果反馈
+     */
+    showResultFeedback(option, outcome) {
+        let feedback = `你选择了：${option.text}。`;
+
+        if (outcome === "success") {
+            feedback += " 这个决定带来了预期的结果。";
+        } else {
+            feedback += " 事情没有按计划发展...";
+        }
+
+        this.game.addFeedback("决策", feedback, outcome === "success" ? "info" : "warning");
+    }
+
+    /**
+     * 显示提示
+     */
+    showHint() {
+        if (!this.activeDecision) return;
+
+        const hints = [
+            "仔细阅读每个选项的描述和风险等级。",
+            "注意选项的成功率，高风险不一定意味着高回报。",
+            "考虑你的当前状态和可用资源。",
+            "不同的选择可能导致完全不同的剧情走向。"
+        ];
+
+        const randomHint = hints[Math.floor(Math.random() * hints.length)];
+        this.game.addFeedback("提示", randomHint, "info");
+    }
+
+    /**
+     * 显示属性检查
+     */
+    showAttributeCheck() {
+        if (!this.activeDecision) return;
+
+        const player = this.game.state.player;
+        let attributes = `当前状态：体力 ${player.stamina.current}/${player.stamina.max}，理智 ${player.sanity.current}/${player.sanity.max}，体温 ${player.body_temperature.current.toFixed(1)}°C`;
+
+        this.game.addFeedback("属性检查", attributes, "info");
+    }
+
+    /**
+     * 处理取消
+     */
+    handleCancel() {
+        if (this.activeDecision?.consequences === "permanent") {
+            this.game.addFeedback("决策", "这是一个关键决策，无法取消。", "warning");
+            return;
+        }
+
+        this.closeDecisionDialog();
+        this.game.addFeedback("决策", "你决定暂时不做决定。", "info");
+    }
+
+    /**
+     * 关闭决策对话框
+     */
+    closeDecisionDialog() {
+        const modal = document.getElementById('decision-modal');
+        modal.classList.remove('active');
+
+        // 清除计时器
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+            this.timerInterval = null;
+        }
+
+        this.activeDecision = null;
+    }
+
+    /**
+     * 检查决策回响（在游戏循环中调用）
+     */
+    checkDecisionEcho(location, npc, action) {
+        const echoes = this.echoEffects.get(location) || [];
+        echoes.forEach(echo => {
+            if (echo.condition(location, npc, action)) {
+                echo.effect();
+            }
+        });
+    }
+
+    /**
+     * 触发测试决策（用于调试）
+     */
+    triggerTestDecision() {
+        this.triggerDecision("crisis_secret_door", {
+            location: "藏经阁",
+            time: "night",
+            sanity: this.game.state.player.sanity.current
+        });
     }
 }
 
@@ -2249,6 +4006,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('close-item-modal').addEventListener('click', () => {
         document.getElementById('item-modal').classList.remove('active');
+    });
+
+    document.getElementById('close-decision').addEventListener('click', () => {
+        document.getElementById('decision-modal').classList.remove('active');
+        // 如果决策管理器已初始化，通知它关闭
+        if (window.game && window.game.decisionManager) {
+            window.game.decisionManager.closeDecisionDialog();
+        }
     });
 
     // 点击模态框背景关闭

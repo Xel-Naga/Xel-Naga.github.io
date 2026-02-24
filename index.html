@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>悬观谜案：百年轮回 - 文字交互式解密游戏</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚰️</text></svg>" type="image/svg+xml">
+    <link rel="icon" href="data:image/x-icon;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAIGNIUk0AAHolAACAgwAA+f8AAIDpAAB1MAAA6mAAADqYAAAXb5JfxUYAAABASURBVHjaYvz//z8DLQETAxUAEwMDAwMDqQoYGShUwAgtQJKrGZkYqAOo4QrquYIariDfFdR0BVmuoIUrAFHDA8eTrUxXAAAAAElFTkSuQmCC" type="image/x-icon">
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -25,6 +27,12 @@
                 </div>
                 <div class="weather-display">
                     <i class="fas fa-snowflake"></i> <span id="game-weather">暴雪</span>
+                </div>
+                <div class="stamina-display">
+                    <i class="fas fa-running"></i> 体力: <span id="stamina-value">100</span>/100
+                </div>
+                <div class="temperature-display">
+                    <i class="fas fa-thermometer-half"></i> 体温: <span id="temperature-value">37.0</span>°C
                 </div>
                 <div class="sanity-display">
                     <i class="fas fa-brain"></i> 理智: <span id="sanity-value">100</span>/100
@@ -121,6 +129,9 @@
                     <button class="quick-btn" id="btn-settings">
                         <i class="fas fa-cog"></i> 设置
                     </button>
+                    <button class="quick-btn" id="btn-status">
+                        <i class="fas fa-heartbeat"></i> 状态
+                    </button>
                     <button class="quick-btn" id="btn-help">
                         <i class="fas fa-question-circle"></i> 帮助
                     </button>
@@ -188,6 +199,26 @@
                     <div class="panel-content">
                         <div class="clues-list" id="clues-list">
                             <!-- 线索列表将通过JavaScript动态生成 -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 状态面板 -->
+                <div class="panel status-panel" id="status-panel">
+                    <div class="panel-header">
+                        <h3><i class="fas fa-heartbeat"></i> 玩家状态</h3>
+                        <button class="panel-close" id="close-status"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div class="panel-content">
+                        <div class="status-display" id="status-display">
+                            <!-- 状态信息将通过JavaScript动态生成 -->
+                            <div class="status-loading">加载状态信息中...</div>
+                        </div>
+                        <div class="status-actions" id="status-actions">
+                            <button class="action-btn" id="rest-btn"><i class="fas fa-bed"></i> 休息</button>
+                            <button class="action-btn" id="warm-up-btn"><i class="fas fa-fire"></i> 取暖</button>
+                            <button class="action-btn" id="calm-btn"><i class="fas fa-spa"></i> 冷静</button>
+                            <button class="action-btn" id="status-details-btn"><i class="fas fa-chart-bar"></i> 详细</button>
                         </div>
                     </div>
                 </div>
@@ -284,6 +315,35 @@
         </div>
     </div>
 
+    <!-- 决策模态框 -->
+    <div class="modal" id="decision-modal">
+        <div class="modal-content decision-modal">
+            <div class="modal-header">
+                <h3 id="decision-title">关键时刻</h3>
+                <div class="decision-time" id="decision-timer">
+                    <div class="timer-bar" id="timer-bar">
+                        <div class="timer-progress" id="timer-progress"></div>
+                    </div>
+                    <span id="time-remaining">30秒</span>
+                </div>
+                <button class="modal-close" id="close-decision"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="decision-description" id="decision-description">
+                    <!-- 决策描述将通过JavaScript动态填充 -->
+                </div>
+                <div class="decision-options" id="decision-options">
+                    <!-- 决策选项将通过JavaScript动态生成 -->
+                </div>
+                <div class="decision-hints" id="decision-hints">
+                    <button class="hint-btn" id="hint-btn"><i class="fas fa-lightbulb"></i> 提示</button>
+                    <button class="check-btn" id="check-attributes-btn"><i class="fas fa-user-check"></i> 属性检查</button>
+                    <button class="cancel-btn" id="cancel-decision-btn"><i class="fas fa-times-circle"></i> 取消</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- 加载遮罩 -->
     <div class="loading-overlay" id="loading-overlay">
         <div class="loading-content">
@@ -294,6 +354,68 @@
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <!-- 动态脚本加载：支持模块化版本和传统版本 -->
+    <script>
+        (function() {
+            console.log('游戏脚本加载开始...');
+
+            // 检测是否支持ES6模块
+            function supportsES6Modules() {
+                try {
+                    new Function('import("")');
+                    return true;
+                } catch (e) {
+                    return false;
+                }
+            }
+
+            // 检测是否在本地文件系统中运行
+            function isLocalFileSystem() {
+                return window.location.protocol === 'file:';
+            }
+
+            // 加载传统脚本
+            function loadLegacyScript() {
+                console.log('加载传统脚本版本 (script.js)...');
+                var script = document.createElement('script');
+                script.src = 'script.js';
+                script.onload = function() {
+                    console.log('传统脚本加载完成');
+                    // 传统脚本中游戏会自动初始化
+                };
+                script.onerror = function() {
+                    console.error('传统脚本加载失败');
+                    alert('游戏脚本加载失败，请检查控制台错误信息。');
+                };
+                document.head.appendChild(script);
+            }
+
+            // 加载模块化脚本
+            function loadModuleScript() {
+                console.log('加载模块化版本 (main.js)...');
+                var script = document.createElement('script');
+                script.type = 'module';
+                script.src = 'main.js';
+                script.onload = function() {
+                    console.log('模块化脚本加载完成');
+                };
+                script.onerror = function(e) {
+                    console.warn('模块化脚本加载失败，回退到传统版本:', e);
+                    loadLegacyScript();
+                };
+                document.head.appendChild(script);
+            }
+
+            // 决定加载策略
+            if (supportsES6Modules() && !isLocalFileSystem()) {
+                // 支持ES6模块且不在本地文件系统：使用模块化版本
+                loadModuleScript();
+            } else {
+                // 不支持ES6模块或在本地文件系统：使用传统版本
+                console.warn('当前环境不支持ES6模块或在本地文件系统中，使用传统脚本版本');
+                loadLegacyScript();
+            }
+        })();
+    </script>
 </body>
 </html>

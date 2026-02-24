@@ -180,7 +180,7 @@ body {
     align-items: center;
 }
 
-.time-display, .weather-display, .sanity-display {
+.time-display, .weather-display, .stamina-display, .temperature-display, .sanity-display {
     display: flex;
     align-items: center;
     gap: 6px;
@@ -191,13 +191,23 @@ body {
     border: 1px solid var(--border-color);
 }
 
-.time-display i, .weather-display i, .sanity-display i {
+.time-display i, .weather-display i, .stamina-display i, .temperature-display i, .sanity-display i {
     color: var(--color-primary);
 }
 
 #sanity-value {
     font-weight: bold;
     color: var(--color-text-highlight);
+}
+
+#stamina-value {
+    font-weight: bold;
+    color: #4CAF50; /* 绿色 */
+}
+
+#temperature-value {
+    font-weight: bold;
+    color: #FF9800; /* 橙色 */
 }
 
 /* 主内容区域 */
@@ -795,16 +805,37 @@ body {
     font-size: 12px;
 }
 
+.task-section-header {
+    margin-top: 15px;
+    margin-bottom: 8px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.task-section-header h4 {
+    margin: 0;
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.task-section-header h4 i {
+    font-size: 12px;
+}
+
+.task-section-header:first-child {
+    margin-top: 0;
+}
+
 /* 地图面板 */
 .map-display {
     background-color: rgba(0, 0, 0, 0.3);
     border-radius: var(--border-radius);
     padding: 15px;
     margin-bottom: 15px;
-    min-height: 200px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    min-height: 280px;
     font-family: var(--font-mono);
     color: var(--color-text-muted);
 }
@@ -838,6 +869,89 @@ body {
 
 .legend-color.locked {
     background-color: var(--color-text-muted);
+}
+
+/* 新地图样式 */
+.map-container {
+    position: relative;
+    width: 100%;
+    height: 250px;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+}
+
+.map-node {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+    transition: all 0.3s ease;
+}
+
+.map-node.current {
+    z-index: 3;
+}
+
+.map-node-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    margin-bottom: 5px;
+}
+
+.map-node.current .map-node-icon {
+    background-color: var(--color-primary);
+    color: white;
+    box-shadow: 0 0 10px var(--color-primary);
+}
+
+.map-node.visited .map-node-icon {
+    background-color: var(--color-interact-blue);
+    color: white;
+}
+
+.map-node-label {
+    font-size: 11px;
+    text-align: center;
+    color: var(--color-text-secondary);
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 2px 5px;
+    border-radius: 3px;
+    white-space: nowrap;
+}
+
+.map-connections {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+.map-connection {
+    stroke: var(--color-text-muted);
+    stroke-width: 2;
+    stroke-dasharray: 5, 5;
+}
+
+.map-direction {
+    font-size: 10px;
+    fill: var(--color-text-secondary);
+    text-anchor: middle;
+    dominant-baseline: middle;
+    background-color: rgba(0, 0, 0, 0.5);
+    padding: 1px 3px;
 }
 
 /* 笔记面板 */
@@ -1144,6 +1258,17 @@ body {
     transform: translateX(5px);
 }
 
+.dialog-option.read {
+    background-color: rgba(100, 100, 100, 0.2);
+    color: #666;
+    border-color: #999;
+}
+
+.dialog-option.read:hover {
+    background-color: rgba(100, 100, 100, 0.4);
+    border-color: #777;
+}
+
 /* 提示模态框 */
 .hint-modal {
     max-width: 500px;
@@ -1193,6 +1318,58 @@ body {
 .item-modal-description {
     font-size: 15px;
     line-height: 1.6;
+}
+
+/* 阅读内容样式 */
+.read-content {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.read-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.read-header i {
+    font-size: 24px;
+    color: var(--color-primary);
+}
+
+.read-header h4 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.read-body {
+    font-size: 16px;
+    line-height: 1.8;
+    padding: 10px 0;
+    min-height: 100px;
+}
+
+.read-body p {
+    margin: 0;
+    white-space: pre-line;
+}
+
+.read-footer {
+    padding-top: 10px;
+    border-top: 1px solid var(--border-color);
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.read-footer i {
+    margin-right: 5px;
 }
 
 /* 交互对象模态框 */
@@ -1613,4 +1790,294 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
     background: var(--color-primary-light);
+}
+
+/* 决策模态框样式 */
+.decision-modal {
+    max-width: 700px;
+    background: linear-gradient(135deg, #2a0a0a 0%, #1a0505 100%);
+    border: 3px solid #8b0000;
+    box-shadow: 0 0 30px rgba(139, 0, 0, 0.5);
+}
+
+.decision-time {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: auto;
+    margin-right: 15px;
+    font-size: 14px;
+    color: #ff9800;
+}
+
+.timer-bar {
+    width: 100px;
+    height: 8px;
+    background-color: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.timer-progress {
+    height: 100%;
+    background: linear-gradient(90deg, #4CAF50, #8BC34A);
+    width: 100%;
+    transition: width 1s linear;
+}
+
+.decision-description {
+    padding: 20px;
+    margin-bottom: 25px;
+    background-color: rgba(0, 0, 0, 0.3);
+    border-radius: var(--border-radius);
+    border-left: 4px solid #ff9800;
+    font-size: 16px;
+    line-height: 1.7;
+    color: var(--color-text-primary);
+}
+
+.decision-description p {
+    margin-bottom: 10px;
+}
+
+.decision-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 25px;
+}
+
+.decision-option {
+    padding: 15px;
+    background-color: rgba(139, 0, 0, 0.15);
+    border: 2px solid rgba(139, 0, 0, 0.5);
+    border-radius: var(--border-radius);
+    color: var(--color-text-primary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    text-align: left;
+    font-size: 15px;
+    position: relative;
+}
+
+.decision-option:hover {
+    background-color: rgba(139, 0, 0, 0.3);
+    border-color: #8b0000;
+    transform: translateX(5px);
+}
+
+.decision-option.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background-color: rgba(100, 100, 100, 0.2);
+    border-color: #666;
+}
+
+.decision-option.disabled:hover {
+    background-color: rgba(100, 100, 100, 0.2);
+    border-color: #666;
+    transform: none;
+}
+
+.decision-option .requirements {
+    display: block;
+    margin-top: 8px;
+    font-size: 12px;
+    color: #aaa;
+    font-style: italic;
+}
+
+.decision-option .risk-level {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    padding: 3px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: bold;
+}
+
+.risk-low {
+    background-color: rgba(76, 175, 80, 0.2);
+    color: #4CAF50;
+    border: 1px solid #4CAF50;
+}
+
+.risk-medium {
+    background-color: rgba(255, 152, 0, 0.2);
+    color: #FF9800;
+    border: 1px solid #FF9800;
+}
+
+.risk-high {
+    background-color: rgba(244, 67, 54, 0.2);
+    color: #F44336;
+    border: 1px solid #F44336;
+}
+
+.decision-hints {
+    display: flex;
+    justify-content: space-between;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-color);
+}
+
+.decision-hints button {
+    padding: 8px 15px;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    background-color: rgba(0, 0, 0, 0.3);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    font-size: 14px;
+}
+
+.decision-hints button:hover {
+    background-color: rgba(139, 0, 0, 0.2);
+    color: var(--color-text-primary);
+    border-color: var(--color-primary);
+}
+
+.hint-btn {
+    color: #4CAF50;
+}
+
+.check-btn {
+    color: #2196F3;
+}
+
+.cancel-btn {
+    color: #F44336;
+}
+
+/* 状态面板样式 */
+.status-section {
+    margin-bottom: 25px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.status-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.status-section h4 {
+    color: var(--color-primary);
+    margin-bottom: 15px;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.status-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+    gap: 15px;
+}
+
+.status-label {
+    width: 70px;
+    font-size: 14px;
+    color: var(--color-text-secondary);
+}
+
+.status-bar-container {
+    flex: 1;
+    height: 12px;
+    background-color: rgba(0, 0, 0, 0.3);
+    border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+}
+
+.status-bar {
+    height: 100%;
+    border-radius: 6px;
+    transition: width 0.5s ease;
+}
+
+.stamina-bar {
+    background: linear-gradient(90deg, #4CAF50, #8BC34A);
+}
+
+.sanity-bar {
+    background: linear-gradient(90deg, #2196F3, #64B5F6);
+}
+
+.temperature-bar {
+    background: linear-gradient(90deg, #F44336, #FF9800);
+}
+
+.intuition-bar {
+    background: linear-gradient(90deg, #9C27B0, #BA68C8);
+}
+
+.suspicion-bar {
+    background: linear-gradient(90deg, #FF9800, #FFB74D);
+}
+
+.luck-bar {
+    background: linear-gradient(90deg, #4CAF50, #8BC34A);
+}
+
+.trauma-bar {
+    background: linear-gradient(90deg, #795548, #A1887F);
+}
+
+.status-value {
+    width: 60px;
+    font-size: 13px;
+    text-align: right;
+    color: var(--color-text-secondary);
+}
+
+.status-effects {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.status-effect {
+    padding: 6px 12px;
+    border-radius: 15px;
+    font-size: 12px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.status-effect.normal {
+    background-color: rgba(76, 175, 80, 0.15);
+    color: #4CAF50;
+    border: 1px solid #4CAF50;
+}
+
+.status-effect.positive {
+    background-color: rgba(33, 150, 243, 0.15);
+    color: #2196F3;
+    border: 1px solid #2196F3;
+}
+
+.status-effect.warning {
+    background-color: rgba(255, 152, 0, 0.15);
+    color: #FF9800;
+    border: 1px solid #FF9800;
+}
+
+.status-effect.danger {
+    background-color: rgba(244, 67, 54, 0.15);
+    color: #F44336;
+    border: 1px solid #F44336;
+}
+
+.status-effect.negative {
+    background-color: rgba(121, 85, 72, 0.15);
+    color: #795548;
+    border: 1px solid #795548;
+}
 }

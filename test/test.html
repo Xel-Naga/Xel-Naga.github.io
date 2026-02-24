@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>模块化重构测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .success {
+            color: green;
+        }
+        .error {
+            color: red;
+        }
+        button {
+            margin: 5px;
+            padding: 8px 15px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>游戏模块化重构测试</h1>
+
+    <div class="test-section">
+        <h2>模块加载测试</h2>
+        <div id="module-test-result">等待测试...</div>
+        <button onclick="testModuleLoading()">测试模块加载</button>
+    </div>
+
+    <div class="test-section">
+        <h2>游戏功能测试</h2>
+        <div id="game-test-result">等待测试...</div>
+        <button onclick="testGameFunctions()">测试游戏功能</button>
+    </div>
+
+    <div class="test-section">
+        <h2>返回主游戏</h2>
+        <p><a href="../index.html">点击返回主游戏页面</a></p>
+    </div>
+
+    <script type="module">
+        import { AdventureGame } from '../modules/core/AdventureGame.js';
+
+        let game = null;
+
+        window.testModuleLoading = async function() {
+            const resultDiv = document.getElementById('module-test-result');
+
+            try {
+                resultDiv.innerHTML = '正在加载模块...';
+
+                // 测试模块导入
+                game = new AdventureGame();
+
+                resultDiv.innerHTML = '<span class="success">✓ 模块加载成功！</span>';
+                resultDiv.innerHTML += '<br>游戏实例已创建：' + (game ? '是' : '否');
+                resultDiv.innerHTML += '<br>游戏状态：' + (game.gameState ? '已初始化' : '未初始化');
+                resultDiv.innerHTML += '<br>事件系统：' + (game.eventSystem ? '已创建' : '未创建');
+
+            } catch (error) {
+                resultDiv.innerHTML = '<span class="error">✗ 模块加载失败：' + error.message + '</span>';
+                console.error('模块加载错误:', error);
+            }
+        };
+
+        window.testGameFunctions = async function() {
+            const resultDiv = document.getElementById('game-test-result');
+
+            if (!game) {
+                resultDiv.innerHTML = '<span class="error">请先测试模块加载</span>';
+                return;
+            }
+
+            try {
+                resultDiv.innerHTML = '正在测试游戏功能...';
+
+                // 测试游戏初始化
+                await game.init();
+
+                resultDiv.innerHTML = '<span class="success">✓ 游戏初始化成功！</span>';
+                resultDiv.innerHTML += '<br>游戏已初始化：' + game.isInitialized;
+                resultDiv.innerHTML += '<br>当前章节：' + game.gameState.getWorldState().chapter;
+                resultDiv.innerHTML += '<br>玩家位置：' + game.gameState.getPlayerLocation();
+                resultDiv.innerHTML += '<br>库存数量：' + game.gameState.getInventoryCount();
+
+            } catch (error) {
+                resultDiv.innerHTML = '<span class="error">✗ 游戏功能测试失败：' + error.message + '</span>';
+                console.error('游戏功能测试错误:', error);
+            }
+        };
+    </script>
+</body>
+</html>

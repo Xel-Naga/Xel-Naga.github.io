@@ -2,7 +2,13 @@
   "permissions": {
     "allow": [
       "Bash(node -c:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(chmod:*)",
+      "Bash(python test_game.py:*)",
+      "Bash(python -m py_compile:*)",
+      "Bash(ls:*)",
+      "Bash(python:*)",
+      "Bash(taskkill:*)"
     ]
   }
 }
