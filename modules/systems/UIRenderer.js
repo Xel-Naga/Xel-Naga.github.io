@@ -929,7 +929,7 @@ export class UIRenderer {
     loadGame() {
         const success = this.game.gameState.loadFromLocalStorage();
         if (success) {
-            this.addFeedback('系统', '游戏已加载', 'success');
+            this.addFeedback('系统', '游戏已加载好', 'success');
             this.updateAllUI();
         } else {
             this.addFeedback('系统', '加载游戏失败', 'error');
