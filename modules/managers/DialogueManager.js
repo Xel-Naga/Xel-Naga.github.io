@@ -35,7 +35,21 @@ export class DialogueManager {
         this.currentNPC = npcId;
 
         // 获取初始分支
-        this.currentBranch = dialogue.initial_branches?.[0] || null;
+        // initial_branches可能是对象数组（有id属性）或字符串数组
+        const firstInitialBranch = dialogue.initial_branches?.[0];
+        if (firstInitialBranch) {
+            if (typeof firstInitialBranch === 'string') {
+                // 如果是字符串，从branches中获取分支对象
+                this.currentBranch = dialogue.branches?.[firstInitialBranch] || null;
+            } else if (firstInitialBranch.id) {
+                // 如果是对象且有id属性，直接使用该对象
+                this.currentBranch = firstInitialBranch;
+            } else {
+                this.currentBranch = null;
+            }
+        } else {
+            this.currentBranch = null;
+        }
 
         // 显示对话对话框
         this.showDialogueDialog();
@@ -321,8 +335,16 @@ export class DialogueManager {
 
         // 显示所有可用分支
         if (this.activeDialogue.initial_branches) {
-            this.activeDialogue.initial_branches.forEach(branchId => {
-                const branch = this.activeDialogue.branches?.[branchId];
+            this.activeDialogue.initial_branches.forEach(branchItem => {
+                let branch;
+                if (typeof branchItem === 'string') {
+                    // 如果是字符串，从branches中获取分支对象
+                    branch = this.activeDialogue.branches?.[branchItem];
+                } else if (branchItem.id) {
+                    // 如果是对象且有id属性，直接使用该对象
+                    branch = branchItem;
+                }
+
                 if (!branch) return;
 
                 const optionButton = this.createDialogueOptionButton(branch);
@@ -446,39 +468,49 @@ export class DialogueManager {
      * 测试对话（用于调试）
      * @param {string} dialogueId - 对话ID
      */
-    testDialogue(dialogueId = 'test_dialogue') {
-        const testDialogue = {
-            id: dialogueId,
-            npc_name: '测试NPC',
-            initial_branches: ['greeting'],
-            branches: {
-                greeting: {
-                    id: 'greeting',
-                    player_text: '你好',
-                    npc_response: '你好，我是测试NPC。',
-                    next_branches: ['ask_name', 'ask_purpose']
-                },
-                ask_name: {
-                    id: 'ask_name',
-                    player_text: '你叫什么名字？',
-                    npc_response: '我叫测试NPC，专门用于测试对话系统。',
-                    next_branches: []
-                },
-                ask_purpose: {
-                    id: 'ask_purpose',
-                    player_text: '你有什么目的？',
-                    npc_response: '我的目的是帮助你测试对话系统的功能。',
-                    result: {
-                        clue: 'test_clue',
-                        relationship: 10
-                    },
-                    next_branches: []
-                }
-            }
-        };
+    testDialogue(dialogueId = 'dialogue_suxiaoyu_subway') {
+        console.log(`测试对话: ${dialogueId}`);
 
-        this.activeDialogue = testDialogue;
-        this.currentBranch = testDialogue.branches.greeting;
-        this.showDialogueDialog();
+        // 尝试从数据加载器中获取对话
+        const dialogue = this.game.dataLoader.getDialogue(dialogueId);
+        if (dialogue) {
+            console.log('找到对话数据，开始对话:', dialogue);
+            this.startDialogue(dialogueId, 'su_xiaoyu');
+        } else {
+            console.warn(`对话不存在: ${dialogueId}，使用测试对话`);
+            const testDialogue = {
+                id: dialogueId,
+                npc_name: '测试NPC',
+                initial_branches: ['greeting'],
+                branches: {
+                    greeting: {
+                        id: 'greeting',
+                        player_text: '你好',
+                        npc_response: '你好，我是测试NPC。',
+                        next_branches: ['ask_name', 'ask_purpose']
+                    },
+                    ask_name: {
+                        id: 'ask_name',
+                        player_text: '你叫什么名字？',
+                        npc_response: '我叫测试NPC，专门用于测试对话系统。',
+                        next_branches: []
+                    },
+                    ask_purpose: {
+                        id: 'ask_purpose',
+                        player_text: '你有什么目的？',
+                        npc_response: '我的目的是帮助你测试对话系统的功能。',
+                        result: {
+                            clue: 'test_clue',
+                            relationship: 10
+                        },
+                        next_branches: []
+                    }
+                }
+            };
+
+            this.activeDialogue = testDialogue;
+            this.currentBranch = testDialogue.branches.greeting;
+            this.showDialogueDialog();
+        }
     }
 }

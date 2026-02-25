@@ -54,7 +54,7 @@ def test_file_structure():
         ("游戏根目录", GAME_DIR, True),
         ("HTML主文件", GAME_DIR / "index.html", True),
         ("样式文件", GAME_DIR / "style.css", True),
-        ("传统脚本文件", GAME_DIR / "script.js", True),
+        ("模块化脚本文件", GAME_DIR / "main.js", True),
         ("数据目录", GAME_DIR / "data", True),
         ("章节数据", GAME_DIR / "data" / "chapter1.json", True),
     ]

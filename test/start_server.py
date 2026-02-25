@@ -30,7 +30,7 @@ def check_game_files():
     required_files = [
         "index.html",
         "style.css",
-        "script.js",
+        "main.js",
         "data/chapter1.json"
     ]
 

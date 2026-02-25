@@ -1425,6 +1425,24 @@ body {
     transform: none;
 }
 
+/* 交互对象无操作提示 */
+.interactive-no-actions {
+    width: 100%;
+    padding: 15px;
+    margin-bottom: 15px;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: var(--border-radius);
+    text-align: center;
+    color: var(--color-text-muted);
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.interactive-no-actions i {
+    margin-right: 8px;
+    color: var(--color-info);
+}
+
 /* 加载遮罩 */
 .loading-overlay {
     position: fixed;

@@ -344,6 +344,9 @@ export class UIRenderer {
         // 更新场景描述
         this.updateSceneDescription(location);
 
+        // 更新场景图片
+        this.updateSceneImage(locationId);
+
         // 更新导航按钮
         this.updateNavigationButtons(location);
 
@@ -938,6 +941,119 @@ export class UIRenderer {
      */
     showSettings() {
         this.addFeedback('系统', '设置功能开发中...', 'info');
+    }
+
+    /**
+     * 更新场景图片
+     * @param {string} locationId - 位置ID
+     */
+    updateSceneImage(locationId) {
+        // 场景图片映射表
+        const sceneImageMap = {
+            // 第一章已定义的位置
+            'college_dorm': 'college_dorm.png',
+            'subway_station': 'subway_station.png',
+            'train_station': 'train_station.png',
+            'mountain_bus': 'mountain_bus.png',
+            'county_station': 'county_station.png',
+            'mountain_road': 'mountain_road.png',
+
+            // 后续章节可能的位置（占位符）
+            'stone_gate': 'stone_gate.png',
+            'courtyard': 'courtyard.png',
+            'main_hall': 'main_hall.png'
+            // 添加更多场景的图片映射
+        };
+
+        // 实际存在的图片文件列表（根据assets/scenes目录中的文件）
+        const existingImages = {
+            'college_dorm.png': true,
+            // 以下图片文件目前不存在，但允许尝试加载（加载失败会显示占位符）
+            'subway_station.png': true,
+            'train_station.png': true,
+            'mountain_bus.png': true,
+            'county_station.png': true,
+            'mountain_road.png': true,
+            'stone_gate.png': true,
+            'courtyard.png': true,
+            'main_hall.png': true
+        };
+
+        const imageContainer = document.getElementById('scene-image-container');
+
+        // 检查是否有映射的图片文件
+        if (sceneImageMap[locationId]) {
+            const imageFileName = sceneImageMap[locationId];
+            const imageUrl = `assets/scenes/${imageFileName}`;
+
+            // 检查图片文件是否实际存在
+            if (existingImages[imageFileName]) {
+                // 图片文件存在，尝试加载
+                const img = new Image();
+                img.src = imageUrl;
+                img.alt = `场景：${locationId}`;
+                img.onload = () => {
+                    // 图片加载成功，替换占位符
+                    imageContainer.innerHTML = '';
+                    imageContainer.appendChild(img);
+                    // 添加淡入效果
+                    setTimeout(() => {
+                        img.classList.add('loaded');
+                    }, 10);
+                    console.log(`场景图片加载成功: ${imageUrl}`);
+                };
+                img.onerror = () => {
+                    // 图片加载失败，显示占位符
+                    console.warn(`场景图片加载失败: ${imageUrl}`);
+                    this.showSceneImagePlaceholder(imageContainer, locationId);
+                };
+            } else {
+                // 图片文件不存在，直接显示占位符
+                console.log(`场景图片文件不存在: ${imageFileName}，显示占位符`);
+                this.showSceneImagePlaceholder(imageContainer, locationId);
+            }
+        } else {
+            // 没有映射的图片，显示占位符
+            console.log(`没有场景图片映射: ${locationId}，显示占位符`);
+            this.showSceneImagePlaceholder(imageContainer, locationId);
+        }
+    }
+
+    /**
+     * 显示场景图片占位符
+     * @param {HTMLElement} container - 容器元素
+     * @param {string} locationId - 位置ID
+     */
+    showSceneImagePlaceholder(container, locationId) {
+        // 场景描述映射，用于占位符文本
+        const sceneDescriptions = {
+            // 第一章已定义的位置
+            'college_dorm': '大学宿舍 - 城市冬日的暮色',
+            'subway_station': '地铁站 - 晚高峰的人群',
+            'train_station': '火车站候车厅 - 电子显示屏闪烁',
+            'mountain_bus': '山区巴士 - 前往悬云山的交通工具',
+            'county_station': '县城车站 - 偏远山区的交通枢纽',
+            'mountain_road': '山路 - 暴雪中的蜿蜒道路',
+
+            // 后续章节可能的位置描述
+            'stone_gate': '山门 - 悬云观的入口',
+            'courtyard': '前院 - 道观的前庭',
+            'main_hall': '主殿 - 道观的核心建筑'
+            // 添加更多场景描述
+        };
+
+        const description = sceneDescriptions[locationId] || '场景图片';
+
+        container.innerHTML = `
+            <div class="scene-image-placeholder">
+                <i class="fas fa-image"></i>
+                <span>${description}</span>
+                <span style="font-size: 12px; margin-top: 5px; color: var(--color-text-muted);">(场景图片待添加)</span>
+                <div style="font-size: 11px; margin-top: 3px; color: var(--color-text-muted); opacity: 0.7;">
+                    位置ID: ${locationId}
+                </div>
+            </div>
+        `;
     }
 
     /**

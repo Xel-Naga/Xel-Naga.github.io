@@ -91,21 +91,24 @@ export class InteractionSystem {
         const availableActions = interactive.actions || [];
         const isNPC = interactiveType === INTERACTIVE_TYPES.NPC;
 
-        // NPC总是显示对话菜单
+        // NPC直接开始对话，不显示交互模态框
         if (isNPC) {
-            this.showInteractiveModal(interactive, interactiveType);
+            // 检查是否有对话结果
+            if (interactive.result && interactive.result.dialogue) {
+                this.handleDialogueResult(interactive, interactive.result);
+            } else {
+                // 如果没有对话结果，显示交互模态框
+                this.showInteractiveModal(interactive, interactiveType);
+            }
             return;
         }
 
         // 所有对象点击都显示模态框（显示描述信息）
         this.showInteractiveModal(interactive, interactiveType);
 
-        // 如果对象有检查操作，处理检查结果（查看描述即视为检查）
-        const hasExamine = availableActions.includes(ACTION_TYPES.EXAMINE) ||
-                          availableActions.includes('examine_item');
-
-        if (hasExamine) {
-            // 处理检查结果（添加线索、反馈等）
+        // 对于非NPC对象，点击即视为检查：处理检查结果（添加线索、反馈等）
+        // 对于所有可交互对象，点击查看描述就相当于执行了检查操作
+        if (!isNPC) {
             this.processInteractiveResult(interactive, interactiveType, ACTION_TYPES.EXAMINE);
         }
     }
@@ -154,13 +157,19 @@ export class InteractionSystem {
         // 获取可用操作
         const availableActions = this.getAvailableActions(interactive, type);
 
-        // 如果没有可用操作，只显示关闭按钮
+        // 如果没有可用操作，显示提示信息
         if (availableActions.length === 0) {
-            const noActionBtn = document.createElement('button');
-            noActionBtn.className = 'interactive-action-btn';
-            noActionBtn.textContent = '关闭';
-            noActionBtn.addEventListener('click', () => this.closeInteractiveModal());
-            container.appendChild(noActionBtn);
+            const infoText = document.createElement('div');
+            infoText.className = 'interactive-no-actions';
+            infoText.innerHTML = '<p><i class="fas fa-info-circle"></i> 已查看该对象，没有其他可用操作。</p>';
+            container.appendChild(infoText);
+
+            // 添加关闭按钮
+            const closeBtn = document.createElement('button');
+            closeBtn.className = 'interactive-action-btn close';
+            closeBtn.innerHTML = '<i class="fas fa-times"></i> 关闭';
+            closeBtn.addEventListener('click', () => this.closeInteractiveModal());
+            container.appendChild(closeBtn);
             return;
         }
 
@@ -198,6 +207,15 @@ export class InteractionSystem {
         // 检查交互对象定义的操作
         if (interactive.actions && Array.isArray(interactive.actions)) {
             interactive.actions.forEach(actionType => {
+                // 过滤掉所有"检查"相关操作，因为点击即完成了检查
+                // 包括: examine, examine_item, 以及任何包含"examine"的操作
+                if (actionType === ACTION_TYPES.EXAMINE ||
+                    actionType === 'examine_item' ||
+                    actionType.includes('examine') ||
+                    actionType.includes('检查')) {
+                    return; // 跳过检查操作
+                }
+
                 const action = this.getActionDefinition(actionType, type);
                 if (action) {
                     actions.push(action);
@@ -283,12 +301,23 @@ export class InteractionSystem {
 
         // 首先检查精确匹配
         if (actionDefinitions[actionType]) {
+            // 检查是否为检查操作
+            if (actionType === ACTION_TYPES.EXAMINE || actionType === 'examine_item') {
+                console.log(`警告：尝试获取检查操作定义: ${actionType}`);
+                return null; // 不返回检查操作定义
+            }
             return actionDefinitions[actionType];
         }
 
         // 如果没有找到，尝试查找可能的变体
         for (const [key, definition] of Object.entries(actionDefinitions)) {
             if (key.includes(actionType) || actionType.includes(key)) {
+                // 检查是否为检查操作
+                if (key === ACTION_TYPES.EXAMINE || key === 'examine_item' ||
+                    definition.type === ACTION_TYPES.EXAMINE) {
+                    console.log(`警告：尝试通过变体获取检查操作定义: ${actionType} -> ${key}`);
+                    continue; // 跳过检查操作
+                }
                 return definition;
             }
         }
@@ -304,7 +333,8 @@ export class InteractionSystem {
     getDefaultActions(interactiveType) {
         const defaultActions = {
             [INTERACTIVE_TYPES.EXAMINE]: [
-                this.getActionDefinition(ACTION_TYPES.EXAMINE, interactiveType)
+                // 可检查对象：点击即显示描述，不需要额外的"检查"按钮
+                // 只显示对象定义的其他操作
             ],
             [INTERACTIVE_TYPES.COLLECT]: [
                 this.getActionDefinition(ACTION_TYPES.TAKE_ITEM, interactiveType)
@@ -313,22 +343,35 @@ export class InteractionSystem {
                 this.getActionDefinition(ACTION_TYPES.TALK, interactiveType)
             ],
             [INTERACTIVE_TYPES.CLUE]: [
-                this.getActionDefinition(ACTION_TYPES.EXAMINE, interactiveType)
+                // 线索对象：点击即显示描述，不需要额外的"检查"按钮
+                // 只显示对象定义的其他操作
             ],
             [INTERACTIVE_TYPES.DANGER]: [
-                this.getActionDefinition(ACTION_TYPES.EXAMINE, interactiveType)
+                // 危险对象：点击即显示描述，不需要额外的"检查"按钮
+                // 只显示对象定义的其他操作
             ],
             [INTERACTIVE_TYPES.INTERACT]: [
                 this.getActionDefinition(ACTION_TYPES.USE, interactiveType)
             ],
             [INTERACTIVE_TYPES.LOCATION]: [
-                this.getActionDefinition(ACTION_TYPES.EXAMINE, interactiveType)
+                // 位置对象：点击即显示描述，不需要额外的"检查"按钮
+                // 只显示对象定义的其他操作
             ]
         };
 
         const actions = defaultActions[interactiveType] || [];
-        // 过滤掉null值
-        return actions.filter(action => action !== null);
+        // 过滤掉null值和检查操作
+        return actions.filter(action => {
+            if (action === null) return false;
+            // 过滤掉检查操作
+            if (action.type === ACTION_TYPES.EXAMINE ||
+                action.type === 'examine_item' ||
+                action.type.includes('examine') ||
+                action.type.includes('检查')) {
+                return false;
+            }
+            return true;
+        });
     }
 
     /**
@@ -373,9 +416,18 @@ export class InteractionSystem {
      */
     processInteractiveResult(interactive, elementType, actionType) {
         const result = interactive.result;
-        if (!result) {
-            this.game.uiRenderer.addFeedback('系统', `你${this.getActionName(actionType)}了${interactive.name}`, 'normal');
-            return;
+
+        // 对于检查操作，显示更明确的反馈
+        if (actionType === ACTION_TYPES.EXAMINE || actionType === 'examine_item') {
+            if (!result) {
+                this.game.uiRenderer.addFeedback('系统', `你仔细检查了${interactive.name}，但没有发现特别之处。`, 'normal');
+                return;
+            }
+        } else {
+            if (!result) {
+                this.game.uiRenderer.addFeedback('系统', `你${this.getActionName(actionType)}了${interactive.name}`, 'normal');
+                return;
+            }
         }
 
         // 处理不同结果类型

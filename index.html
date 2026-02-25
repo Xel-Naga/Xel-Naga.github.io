@@ -354,68 +354,7 @@
         </div>
     </div>
 
-    <!-- 动态脚本加载：支持模块化版本和传统版本 -->
-    <script>
-        (function() {
-            console.log('游戏脚本加载开始...');
-
-            // 检测是否支持ES6模块
-            function supportsES6Modules() {
-                try {
-                    new Function('import("")');
-                    return true;
-                } catch (e) {
-                    return false;
-                }
-            }
-
-            // 检测是否在本地文件系统中运行
-            function isLocalFileSystem() {
-                return window.location.protocol === 'file:';
-            }
-
-            // 加载传统脚本
-            function loadLegacyScript() {
-                console.log('加载传统脚本版本 (script.js)...');
-                var script = document.createElement('script');
-                script.src = 'script.js';
-                script.onload = function() {
-                    console.log('传统脚本加载完成');
-                    // 传统脚本中游戏会自动初始化
-                };
-                script.onerror = function() {
-                    console.error('传统脚本加载失败');
-                    alert('游戏脚本加载失败，请检查控制台错误信息。');
-                };
-                document.head.appendChild(script);
-            }
-
-            // 加载模块化脚本
-            function loadModuleScript() {
-                console.log('加载模块化版本 (main.js)...');
-                var script = document.createElement('script');
-                script.type = 'module';
-                script.src = 'main.js';
-                script.onload = function() {
-                    console.log('模块化脚本加载完成');
-                };
-                script.onerror = function(e) {
-                    console.warn('模块化脚本加载失败，回退到传统版本:', e);
-                    loadLegacyScript();
-                };
-                document.head.appendChild(script);
-            }
-
-            // 决定加载策略
-            if (supportsES6Modules() && !isLocalFileSystem()) {
-                // 支持ES6模块且不在本地文件系统：使用模块化版本
-                loadModuleScript();
-            } else {
-                // 不支持ES6模块或在本地文件系统：使用传统版本
-                console.warn('当前环境不支持ES6模块或在本地文件系统中，使用传统脚本版本');
-                loadLegacyScript();
-            }
-        })();
-    </script>
+    <!-- ES6模块化版本 -->
+    <script type="module" src="main.js"></script>
 </body>
 </html>
