@@ -29,9 +29,9 @@ def check_game_files():
     """检查游戏必需文件是否存在"""
     required_files = [
         "index.html",
-        "style.css",
-        "main.js",
-        "data/chapter1.json"
+        "src/main.js",
+        "src/assets/styles/main.css",
+        "src/data/chapter1.js"
     ]
 
     missing_files = []
@@ -44,12 +44,22 @@ def check_game_files():
         print(f"❌ 缺少必需文件: {', '.join(missing_files)}")
         return False
 
-    # 检查模块化版本文件（可选）
-    module_files = ["main.js", "modules/core/AdventureGame.js"]
+    # 检查核心模块文件（可选）
+    module_files = [
+        "src/core/GameEngine.js",
+        "src/core/GameState.js",
+        "src/core/EventSystem.js",
+        "src/core/SceneManager.js",
+        "src/core/InteractionSystem.js",
+        "src/core/UIRenderer.js"
+    ]
+    module_count = 0
     for file_path in module_files:
         full_path = GAME_DIR / file_path
         if full_path.exists():
-            print(f"✅ 找到模块化文件: {file_path}")
+            module_count += 1
+    if module_count > 0:
+        print(f"✅ 找到 {module_count}/{len(module_files)} 个核心模块文件")
 
     return True
 

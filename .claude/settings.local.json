@@ -13,7 +13,9 @@
       "Bash(curl:*)",
       "Bash(pkill:*)",
       "Bash(netstat:*)",
-      "Bash(findstr:*)"
+      "Bash(findstr:*)",
+      "Bash(tasklist:*)",
+      "Bash(PowerShell:*)"
     ]
   }
 }

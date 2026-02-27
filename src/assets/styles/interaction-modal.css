@@ -1,0 +1,283 @@
+/**
+ * 交互弹窗样式
+ */
+
+/* 弹窗遮罩 */
+.interaction-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.interaction-modal-overlay.show {
+  opacity: 1;
+}
+
+/* 弹窗主体 */
+.interaction-modal {
+  width: 100%;
+  max-width: 400px;
+  max-height: 80vh;
+  background: var(--color-ink-black);
+  border: 2px solid var(--color-faded-red-dark);
+  border-radius: 4px;
+  overflow: hidden;
+  transform: scale(0.95) translateY(20px);
+  transition: transform 0.3s ease;
+}
+
+.interaction-modal-overlay.show .interaction-modal {
+  transform: scale(1) translateY(0);
+}
+
+/* 弹窗头部 */
+.modal-header {
+  padding: 15px 20px;
+  border-bottom: 1px solid var(--color-faded-red-dark);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(139, 58, 58, 0.1);
+}
+
+.modal-header.type-examine {
+  border-left: 4px solid var(--color-examine);
+}
+
+.modal-header.type-collect {
+  border-left: 4px solid var(--color-collect);
+}
+
+.modal-header.type-clue {
+  border-left: 4px solid var(--color-clue);
+}
+
+.modal-header.type-danger {
+  border-left: 4px solid var(--color-danger);
+}
+
+.modal-header.type-npc {
+  border-left: 4px solid var(--color-npc);
+}
+
+.modal-header.type-device {
+  border-left: 4px solid var(--color-device);
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.type-icon {
+  font-size: 1.5rem;
+}
+
+.modal-title {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  color: var(--color-bone-white);
+  margin: 0;
+}
+
+.examined-badge {
+  font-size: 0.75rem;
+  color: var(--color-bone-white-dark);
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 8px;
+  border-radius: 12px;
+  margin-left: 10px;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: var(--color-bone-white-dark);
+  font-size: 1.8rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all var(--transition-fast);
+}
+
+.close-btn:hover {
+  color: var(--color-bone-white);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* 弹窗内容 */
+.modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  max-height: calc(80vh - 70px);
+}
+
+/* 描述区域 */
+.description-section {
+  margin-bottom: 15px;
+}
+
+.description-text {
+  font-size: 0.95rem;
+  line-height: 1.8;
+  color: var(--color-bone-white);
+  margin: 0;
+}
+
+/* 效果提示 */
+.effects-section {
+  background: rgba(139, 58, 58, 0.1);
+  border: 1px solid var(--color-faded-red-dark);
+  padding: 10px 15px;
+  border-radius: 4px;
+  margin-bottom: 15px;
+  font-size: 0.85rem;
+}
+
+.effects-label {
+  color: var(--color-faded-red-light);
+  margin-right: 8px;
+}
+
+.effects-list {
+  color: var(--color-bone-white-dark);
+}
+
+/* 线索区域 */
+.clue-section,
+.item-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 15px;
+  border-radius: 4px;
+  margin-bottom: 10px;
+  font-size: 0.9rem;
+}
+
+.clue-section.hint,
+.item-section.hint {
+  background: rgba(184, 168, 91, 0.1);
+  border: 1px solid rgba(184, 168, 91, 0.3);
+}
+
+.clue-section.obtained,
+.item-section.obtained {
+  background: rgba(91, 139, 91, 0.1);
+  border: 1px solid rgba(91, 139, 91, 0.3);
+}
+
+.clue-icon,
+.item-icon {
+  font-size: 1.2rem;
+}
+
+.clue-text,
+.item-text {
+  color: var(--color-bone-white);
+}
+
+.clue-section.obtained .clue-text,
+.item-section.obtained .item-text {
+  color: var(--color-collect);
+}
+
+/* 动作区域 */
+.actions-section {
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px dashed var(--color-faded-red-dark);
+}
+
+.actions-label {
+  font-size: 0.85rem;
+  color: var(--color-bone-white-dark);
+  margin-bottom: 12px;
+}
+
+.actions-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* 动作按钮 */
+.action-btn-primary,
+.action-btn-danger,
+.action-btn-disabled {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  flex: 1;
+  min-width: 120px;
+}
+
+.action-btn-primary {
+  background: linear-gradient(135deg, rgba(91, 141, 184, 0.8), rgba(91, 141, 184, 0.6));
+  color: var(--color-bone-white);
+  border: 1px solid var(--color-examine);
+}
+
+.action-btn-primary:hover {
+  background: linear-gradient(135deg, rgba(91, 141, 184, 1), rgba(91, 141, 184, 0.8));
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(91, 141, 184, 0.3);
+}
+
+.action-btn-danger {
+  background: linear-gradient(135deg, rgba(184, 91, 91, 0.8), rgba(184, 91, 91, 0.6));
+  color: var(--color-bone-white);
+  border: 1px solid var(--color-danger);
+}
+
+.action-btn-danger:hover {
+  background: linear-gradient(135deg, rgba(184, 91, 91, 1), rgba(184, 91, 91, 0.8));
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(184, 91, 91, 0.3);
+}
+
+.action-btn-disabled {
+  background: rgba(100, 100, 100, 0.2);
+  color: var(--color-bone-white-dark);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: not-allowed;
+}
+
+/* 响应式适配 */
+@media (max-width: 480px) {
+  .interaction-modal {
+    max-height: 90vh;
+  }
+  
+  .modal-body {
+    max-height: calc(90vh - 70px);
+    padding: 15px;
+  }
+  
+  .action-btn-primary,
+  .action-btn-danger,
+  .action-btn-disabled {
+    width: 100%;
+  }
+}
