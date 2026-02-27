@@ -5,6 +5,7 @@
 
 import { InteractionModal } from '../components/InteractionModal.js';
 import { QuestPanel } from '../components/QuestPanel.js';
+import { DialogueModal } from '../components/DialogueModal.js';
 
 export class UIRenderer {
   constructor(engine, eventSystem) {
@@ -28,6 +29,7 @@ export class UIRenderer {
     // 初始化子组件
     this.interactionModal = new InteractionModal(this.eventSystem, this.engine);
     this.questPanel = new QuestPanel(this.eventSystem, this.engine);
+    this.dialogueModal = new DialogueModal(this.eventSystem, this.engine);
     
     // 绑定UI事件
     this.bindEvents();
@@ -148,6 +150,13 @@ export class UIRenderer {
         this.addFeedback(data.result.message, data.result.type);
       }
     });
+
+    // 对话开始
+    this.eventSystem.on('dialogue:start', (data) => {
+      if (this.dialogueModal) {
+        this.dialogueModal.show(data.npcId);
+      }
+    });
   }
 
   /**
@@ -179,46 +188,6 @@ export class UIRenderer {
   }
 
   /**
-   * 渲染出口按钮
-   * @param {Array} exits - 出口数组
-   * @returns {string} HTML
-   */
-  renderExits(exits) {
-    let html = '<div class="scene-exits">';
-    html += '<div class="exits-label">可前往:</div>';
-    html += '<div class="exits-list">';
-    
-    exits.forEach(exit => {
-      const lockedClass = exit.locked ? 'locked' : '';
-      const triggerText = exit.trigger ? ` (${exit.trigger})` : '';
-      html += `<button class="exit-btn ${lockedClass}" data-target="${exit.target}" data-direction="${exit.direction}">${exit.name}${triggerText}</button>`;
-    });
-    
-    html += '</div></div>';
-    return html;
-  }
-
-  /**
-   * 绑定出口点击事件
-   */
-  bindExitEvents() {
-    const exitButtons = this.elements.sceneDescription.querySelectorAll('.exit-btn');
-    exitButtons.forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const target = e.target.dataset.target;
-        const exit = this.currentScene.exits.find(e => e.target === target);
-        
-        if (exit && !exit.locked) {
-          // 查找对应的 exit 对象
-          this.handleHighlightClick(exit, 'move');
-        } else if (exit?.locked) {
-          this.addFeedback(`无法前往: ${exit.lockReason || '道路被封锁'}`, 'danger');
-        }
-      });
-    });
-  }
-
-  /**
    * 解析描述文本，生成交互高亮HTML
    * @param {string} description - 原始描述
    * @param {Array} interactives - 交互元素数组
@@ -232,7 +201,14 @@ export class UIRenderer {
     let html = description;
 
     // 为每个交互元素创建高亮
-    interactives.forEach(item => {
+    // 按名称长度降序排序，避免短名称替换长名称的一部分
+    const sortedInteractives = [...interactives].sort((a, b) => {
+      const lenA = (a.name || '').length;
+      const lenB = (b.name || '').length;
+      return lenB - lenA;
+    });
+
+    sortedInteractives.forEach(item => {
       if (!item.name || !item.id) return;
 
       // 检查是否已检查过
@@ -250,9 +226,16 @@ export class UIRenderer {
         title="点击${this.getActionName(item.type)}"
       >${item.name}</span>`;
 
-      // 替换文本中的名称（只替换第一个匹配，避免重复）
-      const regex = new RegExp(item.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-      html = html.replace(regex, highlightHtml);
+      // 使用更精确的正则替换 - 匹配完整名称，避免部分匹配
+      // 使用非贪婪匹配和边界检查
+      const escapedName = item.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      // 使用正向否定查找确保不在HTML标签内匹配
+      const regex = new RegExp(`(?<![\\w])${escapedName}(?![\\w])`, 'g');
+      
+      // 替换前检查是否已经被替换过（简单检查：是否已包含highlight类）
+      if (!html.includes(`data-id="${item.id}"`)) {
+        html = html.replace(regex, highlightHtml);
+      }
     });
 
     return html;
@@ -357,6 +340,47 @@ export class UIRenderer {
   }
 
   /**
+   * 渲染出口按钮
+   * @param {Array} exits - 出口数组
+   * @returns {string} HTML
+   */
+  renderExits(exits) {
+    let html = '<div class="scene-exits">';
+    html += '<div class="exits-label">可前往:</div>';
+    html += '<div class="exits-list">';
+    
+    exits.forEach(exit => {
+      const lockedClass = exit.locked ? 'locked' : '';
+      const triggerText = exit.trigger ? ` (${exit.trigger})` : '';
+      const lockReason = exit.locked ? ` title="${exit.lockReason}"` : '';
+      html += `<button class="exit-btn ${lockedClass}" data-target="${exit.target}" data-direction="${exit.direction}"${lockReason}>${exit.name}${triggerText}</button>`;
+    });
+    
+    html += '</div></div>';
+    return html;
+  }
+
+  /**
+   * 绑定出口点击事件
+   */
+  bindExitEvents() {
+    const exitButtons = this.elements.sceneDescription.querySelectorAll('.exit-btn');
+    exitButtons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const target = e.target.dataset.target;
+        const exit = this.currentScene.exits.find(e => e.target === target);
+        
+        if (exit && !exit.locked) {
+          // 查找对应的 exit 对象
+          this.handleHighlightClick(exit, 'move');
+        } else if (exit?.locked) {
+          this.addFeedback(`无法前往: ${exit.lockReason || '道路被封锁'}`, 'danger');
+        }
+      });
+    });
+  }
+
+  /**
    * 更新状态面板
    */
   updateStatusPanel() {
@@ -434,6 +458,11 @@ export class UIRenderer {
       case 'inventory':
         this.showInventoryModal();
         break;
+      case 'quest':
+        if (this.questPanel) {
+          this.questPanel.toggle();
+        }
+        break;
       case 'notes':
         this.showNotesModal();
         break;
@@ -445,11 +474,6 @@ export class UIRenderer {
         break;
       case 'settings':
         this.showSettingsModal();
-        break;
-      case 'quest':
-        if (this.questPanel) {
-          this.questPanel.toggle();
-        }
         break;
       default:
         console.warn(`未知的动作: ${action}`);

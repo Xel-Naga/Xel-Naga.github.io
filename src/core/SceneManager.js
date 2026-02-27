@@ -47,55 +47,21 @@ export class SceneManager {
     // 生成动态描述
     const dynamicDescription = this.generateDescription(scene);
     
-    // 处理交互元素
+    // 处理交互元素（包含检查次数的动态描述）
     const interactives = this.processInteractives(scene.interactives || []);
+    
+    // 处理出口（检查任务条件）
+    const exits = this.processExits(scene.exits || []);
     
     return {
       id: sceneId,
       name: scene.name,
       description: dynamicDescription,
       interactives: interactives,
-      exits: scene.exits || [],
+      exits: exits,
       ambience: scene.ambience || '',
       events: scene.events || {},
     };
-  }
-
-  /**
-   * 执行场景进入钩子
-   * @param {Object} scene - 场景数据
-   */
-  executeOnEnter(scene) {
-    if (!scene.onEnter) return;
-
-    // 初始化状态
-    if (scene.onEnter.initStatus) {
-      Object.entries(scene.onEnter.initStatus).forEach(([key, value]) => {
-        this.state.set(`status.${key}.current`, value, true);
-      });
-    }
-
-    // 添加道具
-    if (scene.onEnter.addItems) {
-      scene.onEnter.addItems.forEach(itemId => {
-        this.state.addItem(itemId);
-      });
-    }
-
-    // 应用效果
-    if (scene.onEnter.effects) {
-      Object.entries(scene.onEnter.effects).forEach(([status, delta]) => {
-        this.state.modifyStatus(status, delta);
-      });
-    }
-
-    // 触发事件
-    if (scene.onEnter.triggerEvent) {
-      this.eventSystem.emit('event:trigger', { eventId: scene.onEnter.triggerEvent });
-    }
-
-    // 触发场景进入事件（用于任务检查）
-    this.eventSystem.emit('scene:entered', { sceneId: scene.id, sceneName: scene.name });
   }
 
   /**
@@ -169,7 +135,6 @@ export class SceneManager {
    */
   mergeDescription(base, addition) {
     if (!addition) return base;
-    // 简单追加，实际可以更复杂
     return base + ' ' + addition;
   }
 
@@ -210,17 +175,19 @@ export class SceneManager {
     return interactives.map(item => {
       const processed = { ...item };
       
+      // 获取检查次数（即使没有检查过也获取，用于显示首次描述）
+      const examineCount = this.state.getEventCount(`examine_${item.id}`);
+      
       // 检查是否已检查过
       if (item.id && this.state.hasExamined(item.id)) {
         processed.examined = true;
-        
-        // 应用重复检查的描述
-        if (item.repeatDescriptions) {
-          const count = this.state.getEventCount(`examine_${item.id}`);
-          const repeatDesc = this.getRepeatDescription(item.repeatDescriptions, count);
-          if (repeatDesc) {
-            processed.description = repeatDesc;
-          }
+      }
+      
+      // 应用重复检查的描述（根据检查次数动态调整）
+      if (item.repeatDescriptions) {
+        const repeatDesc = this.getRepeatDescription(item.repeatDescriptions, examineCount);
+        if (repeatDesc) {
+          processed.description = repeatDesc;
         }
       }
       
@@ -232,11 +199,53 @@ export class SceneManager {
    * 获取重复描述
    */
   getRepeatDescription(repeatDescriptions, count) {
+    // count 是已触发的次数，0表示从未检查
+    // 显示描述时，0次显示原始描述，1次显示first（已检查1次）
+    if (count === 0) return null; // 返回null表示使用原始description
     if (count === 1) return repeatDescriptions.first;
     if (count === 2) return repeatDescriptions.second;
     if (count === 3) return repeatDescriptions.third;
     if (count >= 4) return repeatDescriptions.subsequent;
     return null;
+  }
+
+  /**
+   * 处理出口（检查任务条件）
+   * @param {Array} exits - 出口数组
+   * @returns {Array} 处理后的出口
+   */
+  processExits(exits) {
+    return exits.map(exit => {
+      const processed = { ...exit };
+      
+      // 检查是否需要任务条件
+      if (exit.requireQuest) {
+        const completedQuests = this.state.get('quests.completed') || [];
+        const questProgress = this.state.getQuestProgress(exit.requireQuest);
+        const quest = this.chapterData?.quests?.find(q => q.id === exit.requireQuest);
+        
+        // 检查任务是否完成
+        if (!completedQuests.includes(exit.requireQuest)) {
+          processed.locked = true;
+          processed.lockReason = exit.requireQuestText || `需要完成: ${quest?.name || '前置任务'}`;
+        }
+      }
+      
+      // 检查是否需要特定步骤
+      if (exit.requireQuestStep) {
+        const [questId, stepId] = exit.requireQuestStep.split(':');
+        const progress = this.state.getQuestProgress(questId);
+        
+        if (!progress?.completedSteps?.includes(stepId)) {
+          processed.locked = true;
+          const quest = this.chapterData?.quests?.find(q => q.id === questId);
+          const step = quest?.steps?.find(s => s.id === stepId);
+          processed.lockReason = step?.description || '前置步骤未完成';
+        }
+      }
+      
+      return processed;
+    });
   }
 
   /**
@@ -261,12 +270,7 @@ export class SceneManager {
     const scene = this.scenes.get(sceneId);
     if (!scene || !scene.exits) return [];
     
-    return scene.exits.map(exit => ({
-      direction: exit.direction,
-      target: exit.target,
-      name: exit.name || exit.target,
-      locked: exit.locked || false,
-    }));
+    return this.processExits(scene.exits);
   }
 
   /**
@@ -281,8 +285,52 @@ export class SceneManager {
     
     const exit = scene.exits.find(e => e.direction === direction);
     if (!exit) return null;
-    if (exit.locked) return { locked: true, reason: exit.lockReason };
+    
+    // 处理出口条件检查
+    const processedExits = this.processExits([exit]);
+    const processedExit = processedExits[0];
+    
+    if (processedExit.locked) {
+      return { locked: true, reason: processedExit.lockReason };
+    }
     
     return { target: exit.target };
+  }
+
+  /**
+   * 执行场景进入钩子
+   * @param {Object} scene - 场景数据
+   */
+  executeOnEnter(scene) {
+    if (!scene.onEnter) return;
+
+    // 初始化状态
+    if (scene.onEnter.initStatus) {
+      Object.entries(scene.onEnter.initStatus).forEach(([key, value]) => {
+        this.state.set(`status.${key}.current`, value, true);
+      });
+    }
+
+    // 添加道具
+    if (scene.onEnter.addItems) {
+      scene.onEnter.addItems.forEach(itemId => {
+        this.state.addItem(itemId);
+      });
+    }
+
+    // 应用效果
+    if (scene.onEnter.effects) {
+      Object.entries(scene.onEnter.effects).forEach(([status, delta]) => {
+        this.state.modifyStatus(status, delta);
+      });
+    }
+
+    // 触发事件
+    if (scene.onEnter.triggerEvent) {
+      this.eventSystem.emit('event:trigger', { eventId: scene.onEnter.triggerEvent });
+    }
+
+    // 触发场景进入事件（用于任务检查）
+    this.eventSystem.emit('scene:entered', { sceneId: scene.id, sceneName: scene.name });
   }
 }

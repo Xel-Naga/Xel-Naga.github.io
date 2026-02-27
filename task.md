@@ -287,15 +287,36 @@ TaositStory/
 
 ---
 
-## 待完成任务（下一阶段）
+## 最近更新 - 阶段二进展
+
+### 2026年2月28日 - 对话系统UI ✅
+
+**新增文件**：
+- `src/components/DialogueModal.js` - 对话弹窗组件
+- `src/assets/styles/dialogue-modal.css` - 对话样式
+
+**功能特性**：
+- **NPC信息头部**：头像、名称、描述
+- **对话历史区**：显示玩家和NPC的对话记录
+- **对话选项区**：可选择的对话选项列表
+- **视觉效果**：不同说话人用不同颜色区分
+- **交互反馈**：鼠标悬停效果、点击动画
+- **智能过滤**：已说过的一次性对话不再显示
+- **前置条件检查**：需要特定线索或任务才能显示的对话
+
+**对话效果**：
+- 理智变化
+- 线索获取
+- 道具获取
+- NPC关系变化
+
+---
+
+## 待完成任务（阶段二剩余）
 
 ### 阶段二：核心系统增强（第3-4周）
 
-1. **对话系统UI**
-   - 对话框界面
-   - 对话选项列表
-   - 对话历史记录
-   - NPC头像显示
+1. ✅ **对话系统UI** - 已完成
 
 2. **道具使用系统**
    - 道具使用界面
@@ -348,12 +369,14 @@ TaositStory/
 | src/core/UIRenderer.js | UI渲染器 | ~18KB |
 | src/components/InteractionModal.js | 交互弹窗 | ~8.9KB |
 | src/components/QuestPanel.js | 任务面板 | ~7.1KB |
+| src/components/DialogueModal.js | 对话弹窗 | ~7.9KB |
 | src/data/chapter1.js | 第一章数据 | ~41KB |
 | src/assets/styles/main.css | 主样式表 | ~16KB |
 | src/assets/styles/interaction-modal.css | 弹窗样式 | ~5.7KB |
 | src/assets/styles/quest-panel.css | 任务面板样式 | ~6KB |
+| src/assets/styles/dialogue-modal.css | 对话样式 | ~5.8KB |
 
-**总计代码量**：约 156KB JavaScript/CSS + 4.8KB HTML
+**总计代码量**：约 170KB JavaScript/CSS + 4.8KB HTML
 
 ---
 
@@ -364,6 +387,25 @@ TaositStory/
 2. **点击出口按钮** - 移动到其他场景
 3. **点击底部按钮** - 打开对应面板
 4. **按 Q 键** - 快速打开任务面板
+
+### 交互弹窗
+- 查看对象详情
+- 了解可能的影响
+- 点击动作按钮执行交互
+- **点击"对话"按钮与NPC交谈**
+- ESC或点击背景关闭
+
+### 对话系统
+- 选择对话选项与NPC交流
+- 不同选项可能获得不同信息
+- 某些对话为一次性
+- 某些对话需要前置条件
+- 对话可能获得线索或道具
+
+### 任务系统
+- 任务自动追踪进度
+- 完成任务后自动激活下一个
+- 在任务面板查看进度
 
 ### 交互弹窗
 - 查看对象详情

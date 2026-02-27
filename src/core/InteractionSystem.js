@@ -247,26 +247,24 @@ export class InteractionSystem {
    * 处理NPC交互
    */
   handleNPC(elementId, action) {
-    const npcId = elementId;
+    const sceneData = this.getCurrentSceneData();
+    const interactive = sceneData?.interactives?.find(i => i.id === elementId);
     
-    // 获取NPC数据
-    const npcData = this.getNPCData(npcId);
-    if (!npcData) {
-      return { success: false, reason: 'npc_not_found' };
+    if (!interactive) {
+      return { success: false, reason: 'not_found' };
     }
 
+    const npcId = interactive.npcId;
+    
     // 触发对话事件
     this.eventSystem.emit('dialogue:start', {
       npcId: npcId,
-      npcName: npcData.name,
-      initialDialogue: npcData.initialDialogue,
     });
 
     return {
       success: true,
       type: 'npc',
       npcId: npcId,
-      npcName: npcData.name,
     };
   }
 

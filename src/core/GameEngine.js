@@ -81,60 +81,6 @@ export class GameEngine {
   }
 
   /**
-   * 检查任务进度
-   */
-  checkQuestProgress(triggerType, triggerId) {
-    const activeQuests = this.state.get('quests.active') || [];
-    
-    activeQuests.forEach(questId => {
-      const quest = this.currentChapter?.quests?.find(q => q.id === questId);
-      if (!quest || !quest.steps) return;
-      
-      quest.steps.forEach(step => {
-        if (step.trigger && !step.completed) {
-          // 检查是否匹配触发条件
-          const [type, id] = step.trigger.split(':');
-          if (type === triggerType && id === triggerId) {
-            this.state.updateQuestProgress(questId, step.id);
-            step.completed = true;
-            
-            // 显示进度提示
-            this.eventSystem.emit('feedback:show', {
-              message: `任务进度: ${step.description}`,
-              type: 'quest',
-            });
-            
-            // 检查是否完成所有步骤
-            const completedCount = quest.steps.filter(s => s.completed).length;
-            if (completedCount >= quest.steps.length) {
-              this.state.completeQuest(questId);
-              
-              // 激活下一个任务
-              this.activateNextQuest(quest);
-            }
-          }
-        }
-      });
-    });
-  }
-
-  /**
-   * 激活下一个任务
-   */
-  activateNextQuest(completedQuest) {
-    if (!this.currentChapter?.quests) return;
-    
-    // 按顺序查找下一个主线任务
-    const mainQuests = this.currentChapter.quests.filter(q => q.type === 'main');
-    const currentIndex = mainQuests.findIndex(q => q.id === completedQuest.id);
-    
-    if (currentIndex >= 0 && currentIndex < mainQuests.length - 1) {
-      const nextQuest = mainQuests[currentIndex + 1];
-      this.state.activateQuest(nextQuest.id);
-    }
-  }
-
-  /**
    * 添加初始道具
    */
   addInitialItems() {
@@ -191,6 +137,90 @@ export class GameEngine {
   }
 
   /**
+   * 检查任务进度
+   */
+  checkQuestProgress(triggerType, triggerId) {
+    const activeQuests = this.state.get('quests.active') || [];
+    
+    activeQuests.forEach(questId => {
+      const quest = this.currentChapter?.quests?.find(q => q.id === questId);
+      if (!quest || !quest.steps) return;
+      
+      quest.steps.forEach(step => {
+        if (step.trigger && !step.completed) {
+          // 检查是否匹配触发条件
+          const [type, id] = step.trigger.split(':');
+          if (type === triggerType && id === triggerId) {
+            // 更新任务进度
+            this.state.updateQuestProgress(questId, step.id);
+            step.completed = true;
+            
+            // 显示进度提示
+            this.eventSystem.emit('feedback:show', {
+              message: `任务进度: ${step.description}`,
+              type: 'quest',
+            });
+            
+            // 检查是否完成所有步骤
+            const completedCount = quest.steps.filter(s => s.completed).length;
+            if (completedCount >= quest.steps.length) {
+              this.completeQuest(questId);
+            }
+          }
+        }
+      });
+    });
+  }
+
+  /**
+   * 完成任务
+   * @param {string} questId - 任务ID
+   */
+  completeQuest(questId) {
+    const quest = this.currentChapter?.quests?.find(q => q.id === questId);
+    if (!quest) return;
+    
+    // 完成任务
+    this.state.completeQuest(questId);
+    
+    // 发放奖励
+    if (quest.rewards) {
+      if (quest.rewards.items) {
+        quest.rewards.items.forEach(itemId => {
+          this.state.addItem(itemId);
+        });
+      }
+    }
+    
+    // 激活下一个主线任务
+    if (quest.type === 'main') {
+      this.activateNextQuest(quest);
+    }
+  }
+
+  /**
+   * 激活下一个任务
+   */
+  activateNextQuest(completedQuest) {
+    if (!this.currentChapter?.quests) return;
+    
+    // 按顺序查找下一个主线任务
+    const mainQuests = this.currentChapter.quests.filter(q => q.type === 'main');
+    const currentIndex = mainQuests.findIndex(q => q.id === completedQuest.id);
+    
+    if (currentIndex >= 0 && currentIndex < mainQuests.length - 1) {
+      const nextQuest = mainQuests[currentIndex + 1];
+      // 检查是否已激活或已完成
+      const active = this.state.get('quests.active') || [];
+      const completed = this.state.get('quests.completed') || [];
+      
+      if (!active.includes(nextQuest.id) && !completed.includes(nextQuest.id)) {
+        this.state.activateQuest(nextQuest.id);
+      }
+    }
+  }
+
+  /**
    * 开始章节
    * @param {number} chapterNumber - 章节号
    */
@@ -233,8 +263,14 @@ export class GameEngine {
     // 激活第一个主线任务
     const initialQuest = this.currentChapter.quests.find(q => q.id === 'quest_preparation');
     if (initialQuest) {
-      this.state.activateQuest(initialQuest.id);
-      console.log(`任务已激活: ${initialQuest.name}`);
+      const active = this.state.get('quests.active') || [];
+      const completed = this.state.get('quests.completed') || [];
+      
+      // 只有未激活且未完成时才激活
+      if (!active.includes(initialQuest.id) && !completed.includes(initialQuest.id)) {
+        this.state.activateQuest(initialQuest.id);
+        console.log(`任务已激活: ${initialQuest.name}`);
+      }
     }
   }
 
