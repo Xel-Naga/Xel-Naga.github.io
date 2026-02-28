@@ -31,9 +31,12 @@ export class GameState {
       world: {
         chapter: 1,
         scene: 'gate',
-        time: { hour: 15, minute: 0 }, // 24小时制
-        date: '2025-01-15',
+        time: { hour: 15, minute: 0 }, // 24小时制（内部使用）
+        date: { year: 2025, month: 1, day: 15 }, // 年月日
+        lunarYear: '乙巳年', // 农历干支年
+        timePhase: '黄昏', // 模糊时间段
         weather: 'blizzard',
+        temperature: -5, // 环境温度
         visitedLocations: ['gate'],
         triggeredEvents: [],
         flags: {}, // 各种剧情标志
@@ -399,10 +402,93 @@ export class GameState {
       this.set('world.visitedLocations', visited);
     }
     
+    // 场景变化时推进时间（2-4小时）
+    this.advanceTime();
+    
     this.eventSystem.emit('location:changed', {
       from: oldLocation,
       to: locationId,
     });
+  }
+
+  /**
+   * 推进时间
+   * @param {number} hours - 推进小时数（默认随机2-4小时）
+   */
+  advanceTime(hours) {
+    const advanceHours = hours || Math.floor(Math.random() * 3) + 2; // 2-4小时
+    const currentTime = this.get('world.time');
+    const currentDate = this.get('world.date');
+    
+    let newHour = currentTime.hour + advanceHours;
+    let newDay = currentDate.day;
+    let newMonth = currentDate.month;
+    let newYear = currentDate.year;
+    
+    // 处理日期进位
+    if (newHour >= 24) {
+      newHour -= 24;
+      newDay++;
+      
+      // 简单处理月份天数（不考虑闰年）
+      const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+      if (newDay > daysInMonth[newMonth - 1]) {
+        newDay = 1;
+        newMonth++;
+        if (newMonth > 12) {
+          newMonth = 1;
+          newYear++;
+          // 更新农历年份
+          this.set('world.lunarYear', this.calculateLunarYear(newYear));
+        }
+      }
+    }
+    
+    // 更新时间
+    this.set('world.time', { hour: newHour, minute: 0 });
+    this.set('world.date', { year: newYear, month: newMonth, day: newDay });
+    
+    // 更新模糊时间段
+    this.set('world.timePhase', this.getTimePhase(newHour));
+    
+    console.log(`时间推进: ${currentDate.year}年${currentDate.month}月${currentDate.day}日 ${currentTime.hour}时 -> ${newYear}年${newMonth}月${newDay}日 ${newHour}时 (${this.getTimePhase(newHour)})`);
+  }
+
+  /**
+   * 计算农历干支年份
+   * @param {number} year - 公历年份
+   * @returns {string} 干支年份
+   */
+  calculateLunarYear(year) {
+    const gan = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'];
+    const zhi = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
+    
+    // 1984年是甲子年
+    const offset = year - 1984;
+    const ganIndex = ((offset % 10) + 10) % 10;
+    const zhiIndex = ((offset % 12) + 12) % 12;
+    
+    return gan[ganIndex] + zhi[zhiIndex] + '年';
+  }
+
+  /**
+   * 获取模糊时间段描述
+   * @param {number} hour - 小时（0-23）
+   * @returns {string} 时间段描述
+   */
+  getTimePhase(hour) {
+    if (hour >= 5 && hour < 7) return '黎明';
+    if (hour >= 7 && hour < 9) return '清晨';
+    if (hour >= 9 && hour < 12) return '上午';
+    if (hour >= 12 && hour < 14) return '正午';
+    if (hour >= 14 && hour < 17) return '下午';
+    if (hour >= 17 && hour < 19) return '黄昏';
+    if (hour >= 19 && hour < 21) return '傍晚';
+    if (hour >= 21 && hour < 23) return '晚上';
+    if (hour >= 23 || hour < 1) return '午夜';
+    if (hour >= 1 && hour < 3) return '深夜';
+    if (hour >= 3 && hour < 5) return '凌晨';
+    return '深夜';
   }
 
   /**

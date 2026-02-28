@@ -283,6 +283,62 @@
   cursor: not-allowed;
 }
 
+/* 结果展示区域 */
+.result-section {
+  background: rgba(91, 139, 91, 0.1);
+  border: 1px solid rgba(91, 139, 91, 0.3);
+  border-radius: 4px;
+  padding: 15px;
+  margin-bottom: 15px;
+}
+
+.result-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.result-icon {
+  font-size: 1.2rem;
+}
+
+.result-title {
+  font-size: 1rem;
+  font-weight: bold;
+  color: var(--color-collect);
+  flex: 1;
+}
+
+.result-message {
+  font-size: 0.95rem;
+  line-height: 1.8;
+  color: var(--color-bone-white);
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.result-clue {
+  background: rgba(184, 168, 91, 0.1);
+  border: 1px solid rgba(184, 168, 91, 0.3);
+  border-radius: 4px;
+  padding: 15px;
+  margin-bottom: 15px;
+}
+
+.result-clue-title {
+  font-size: 0.9rem;
+  color: var(--color-clue);
+  margin-bottom: 5px;
+}
+
+.result-clue-name {
+  font-size: 1rem;
+  color: var(--color-bone-white);
+  font-weight: bold;
+}
+
 /* 响应式适配 */
 @media (max-width: 480px) {
   .interaction-modal {

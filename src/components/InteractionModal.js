@@ -238,7 +238,7 @@ export class InteractionModal {
         const id = e.currentTarget.dataset.id;
         console.log(`点击动作按钮: action=${action}, id=${id}`);
         
-        // 先执行交互（确保事件在弹窗关闭前触发）
+        // 先执行交互
         const result = this.gameEngine.handleInteraction(id, action);
         console.log(`交互结果:`, result);
         
@@ -249,9 +249,15 @@ export class InteractionModal {
             action: action,
             result: result,
           });
+          
+          // 对于检查和设备操作，在弹窗内显示结果
+          if (action === 'examine' || action === 'device') {
+            this.showResult(result, interactive, id);
+            return;
+          }
         }
         
-        // 然后关闭弹窗
+        // 其他情况直接关闭弹窗
         this.close();
       });
     });
@@ -287,6 +293,60 @@ export class InteractionModal {
     if (this.escHandler) {
       document.removeEventListener('keydown', this.escHandler);
       this.escHandler = null;
+    }
+  }
+
+  /**
+   * 在弹窗内显示操作结果
+   * @param {Object} result - 交互结果
+   * @param {Object} interactive - 交互对象数据
+   * @param {string} elementId - 元素ID
+   */
+  showResult(result, interactive, elementId) {
+    if (!this.modal) return;
+    
+    const body = this.modal.querySelector('.modal-body');
+    if (!body) return;
+    
+    // 获取已检查次数（用于examine类型）
+    const examineCount = result.count || this.gameEngine.state.getEventCount(`examine_${elementId}`);
+    const examinedBadge = examineCount > 0 ? `<span class="examined-badge">已检查 ${examineCount} 次</span>` : '';
+    
+    // 构建结果内容
+    let resultHTML = `
+      <div class="result-section">
+        <div class="result-header">
+          <span class="result-icon">✓</span>
+          <span class="result-title">检查完成</span>
+          ${examinedBadge}
+        </div>
+        <div class="result-message">${result.message || '你完成了检查。'}</div>
+      </div>
+    `;
+    
+    // 如果有线索获得，显示线索信息
+    if (result.clueId || interactive.clueId) {
+      const clueId = result.clueId || interactive.clueId;
+      const clue = this.gameEngine.getClueData?.(clueId);
+      resultHTML += `
+        <div class="result-clue">
+          <div class="result-clue-title">🔍 发现线索</div>
+          <div class="result-clue-name">${clue ? clue.name : '未知线索'}</div>
+        </div>
+      `;
+    }
+    
+    // 更新弹窗内容
+    body.innerHTML = resultHTML + `
+      <div class="actions-section">
+        <button class="action-btn-primary" id="result-close-btn">关闭</button>
+      </div>
+    `;
+    
+    // 绑定关闭按钮
+    const closeBtn = body.querySelector('#result-close-btn');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => this.close());
     }
   }
 

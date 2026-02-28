@@ -39,6 +39,7 @@ export class UIRenderer {
     
     // 初始化状态显示
     this.updateStatusPanel();
+    this.updateEnvironmentInfo();
     
     console.log('✅ UI渲染器初始化完成');
   }
@@ -55,15 +56,10 @@ export class UIRenderer {
       // 反馈区域
       feedbackLog: document.getElementById('feedback-log'),
       
-      // 状态面板
-      statusToggle: document.getElementById('status-toggle'),
-      statusContent: document.getElementById('status-content'),
+      // 用户信息面板 - 状态条
       staminaFill: document.getElementById('stamina-fill'),
-      staminaValue: document.getElementById('stamina-value'),
       sanityFill: document.getElementById('sanity-fill'),
-      sanityValue: document.getElementById('sanity-value'),
       temperatureFill: document.getElementById('temperature-fill'),
-      temperatureValue: document.getElementById('temperature-value'),
       
       // 动作按钮
       actionButtons: document.querySelectorAll('.action-btn'),
@@ -77,14 +73,6 @@ export class UIRenderer {
    * 绑定UI事件
    */
   bindEvents() {
-    // 状态面板折叠/展开
-    if (this.elements.statusToggle && this.elements.statusContent) {
-      this.elements.statusToggle.addEventListener('click', () => {
-        this.elements.statusContent.classList.toggle('collapsed');
-        this.elements.statusToggle.classList.toggle('collapsed');
-      });
-    }
-
     // 动作按钮
     this.elements.actionButtons.forEach(btn => {
       btn.addEventListener('click', (e) => {
@@ -180,6 +168,9 @@ export class UIRenderer {
     if (this.elements.currentLocation) {
       this.elements.currentLocation.textContent = sceneData.name;
     }
+
+    // 更新环境信息
+    this.updateEnvironmentInfo();
 
     // 渲染场景描述
     if (this.elements.sceneDescription) {
@@ -437,26 +428,73 @@ export class UIRenderer {
     if (!status) return;
 
     // 体力
-    if (this.elements.staminaFill && this.elements.staminaValue) {
+    if (this.elements.staminaFill) {
       const staminaPercent = (status.stamina.current / status.stamina.max) * 100;
       this.elements.staminaFill.style.width = `${staminaPercent}%`;
-      this.elements.staminaValue.textContent = `${status.stamina.current}`;
     }
 
     // 理智
-    if (this.elements.sanityFill && this.elements.sanityValue) {
+    if (this.elements.sanityFill) {
       const sanityPercent = (status.sanity.current / status.sanity.max) * 100;
       this.elements.sanityFill.style.width = `${sanityPercent}%`;
-      this.elements.sanityValue.textContent = `${status.sanity.current}`;
     }
 
     // 体温
-    if (this.elements.temperatureFill && this.elements.temperatureValue) {
+    if (this.elements.temperatureFill) {
       const temp = status.temperature.current;
       // 体温条显示范围 28-40°C
       const tempPercent = ((temp - 28) / (40 - 28)) * 100;
       this.elements.temperatureFill.style.width = `${Math.max(0, Math.min(100, tempPercent))}%`;
-      this.elements.temperatureValue.textContent = `${temp.toFixed(1)}°C`;
+    }
+  }
+
+  /**
+   * 更新环境信息（日期、时间、天气、温度）
+   */
+  updateEnvironmentInfo() {
+    const world = this.engine.state.get('world');
+    if (!world) return;
+
+    // 更新日期显示（年月日 + 农历）
+    const dateEl = document.getElementById('env-date');
+    if (dateEl && world.date) {
+      const dateStr = `${world.date.year}年${world.date.month}月${world.date.day}日`;
+      const lunarStr = world.lunarYear || '';
+      dateEl.querySelector('.env-value').textContent = `${dateStr} ${lunarStr}`;
+    }
+
+    // 更新模糊时间段
+    const timeEl = document.getElementById('env-time');
+    if (timeEl) {
+      const timePhase = world.timePhase || '黄昏';
+      timeEl.querySelector('.env-value').textContent = timePhase;
+    }
+
+    // 天气
+    const weatherEl = document.getElementById('env-weather');
+    if (weatherEl && world.weather) {
+      const weatherMap = {
+        'blizzard': '暴雪',
+        'snow': '下雪',
+        'cloudy': '多云',
+        'clear': '晴朗',
+        'fog': '大雾',
+      };
+      const weatherIconMap = {
+        'blizzard': '🌨️',
+        'snow': '❄️',
+        'cloudy': '☁️',
+        'clear': '☀️',
+        'fog': '🌫️',
+      };
+      weatherEl.querySelector('.env-value').textContent = weatherMap[world.weather] || world.weather;
+      weatherEl.querySelector('.env-icon').textContent = weatherIconMap[world.weather] || '🌡️';
+    }
+
+    // 环境温度
+    const tempEl = document.getElementById('env-temp');
+    if (tempEl && world.temperature !== undefined) {
+      tempEl.querySelector('.env-value').textContent = `${world.temperature}°C`;
     }
   }
 

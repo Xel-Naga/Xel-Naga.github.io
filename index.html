@@ -34,21 +34,73 @@
     <!-- 标题栏 -->
     <header class="game-header">
       <div class="header-border">
-        <h1 class="game-title">悬观谜案</h1>
-        <span class="game-subtitle">百年轮回</span>
+        <h1 class="game-title">悬观谜案<span class="game-subtitle">百年轮回</span></h1>
       </div>
     </header>
 
-    <!-- 场景显示区域 -->
-    <main class="scene-display">
-      <!-- 场景图片/背景 -->
-      <div class="scene-visual">
-        <div class="scene-location-tag">
-          <span id="current-location">载入中...</span>
+    <!-- 用户信息面板 -->
+    <aside class="user-info-panel">
+      <div class="user-info-border">
+        <!-- 用户基本信息 -->
+        <div class="user-basic">
+          <div class="user-avatar">👤</div>
+          <div class="user-details">
+            <div class="user-name">林墨</div>
+            <div class="user-location">
+              <span class="location-icon">📍</span>
+              <span id="current-location">载入中...</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 环境信息 -->
+        <div class="environment-info">
+          <div class="env-item env-date" id="env-date">
+            <span class="env-icon">📅</span>
+            <span class="env-value">2025年1月15日 乙巳年</span>
+          </div>
+          <div class="env-row">
+            <div class="env-item" id="env-time">
+              <span class="env-icon">🕐</span>
+              <span class="env-value">黄昏</span>
+            </div>
+            <div class="env-item" id="env-weather">
+              <span class="env-icon">🌨️</span>
+              <span class="env-value">暴雪</span>
+            </div>
+            <div class="env-item" id="env-temp">
+              <span class="env-icon">🌡️</span>
+              <span class="env-value">-5°C</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 状态条 -->
+        <div class="status-bars">
+          <div class="status-bar-item" data-status="stamina" title="体力">
+            <span class="status-icon">⚡</span>
+            <div class="status-bar">
+              <div class="status-fill" id="stamina-fill"></div>
+            </div>
+          </div>
+          <div class="status-bar-item" data-status="sanity" title="理智">
+            <span class="status-icon">🧠</span>
+            <div class="status-bar">
+              <div class="status-fill" id="sanity-fill"></div>
+            </div>
+          </div>
+          <div class="status-bar-item" data-status="temperature" title="体温">
+            <span class="status-icon">🌡️</span>
+            <div class="status-bar">
+              <div class="status-fill" id="temperature-fill"></div>
+            </div>
+          </div>
         </div>
       </div>
-      
-      <!-- 场景描述文本 -->
+    </aside>
+
+    <!-- 场景描述区域 -->
+    <main class="scene-display">
       <div class="scene-description-container">
         <div id="scene-description" class="scene-description">
           正在进入悬云观...
@@ -60,39 +112,6 @@
     <section class="feedback-area">
       <div id="feedback-log" class="feedback-log"></div>
     </section>
-
-    <!-- 玩家状态面板 -->
-    <aside class="status-panel">
-      <div class="status-border">
-        <div class="status-header">
-          <span class="status-title">状态</span>
-          <button id="status-toggle" class="toggle-btn" aria-label="切换状态面板">▼</button>
-        </div>
-        <div id="status-content" class="status-content">
-          <div class="status-item" data-status="stamina">
-            <span class="status-label">体力</span>
-            <div class="status-bar">
-              <div class="status-fill" id="stamina-fill"></div>
-            </div>
-            <span class="status-value" id="stamina-value">100</span>
-          </div>
-          <div class="status-item" data-status="sanity">
-            <span class="status-label">理智</span>
-            <div class="status-bar">
-              <div class="status-fill" id="sanity-fill"></div>
-            </div>
-            <span class="status-value" id="sanity-value">100</span>
-          </div>
-          <div class="status-item" data-status="temperature">
-            <span class="status-label">体温</span>
-            <div class="status-bar">
-              <div class="status-fill" id="temperature-fill"></div>
-            </div>
-            <span class="status-value" id="temperature-value">37°C</span>
-          </div>
-        </div>
-      </div>
-    </aside>
 
     <!-- 快捷按钮栏 -->
     <nav class="action-bar">
