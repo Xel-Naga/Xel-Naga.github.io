@@ -4,9 +4,10 @@
  */
 
 export class InteractionSystem {
-  constructor(state, eventSystem) {
+  constructor(state, eventSystem, gameEngine = null) {
     this.state = state;
     this.eventSystem = eventSystem;
+    this.gameEngine = gameEngine;
     this.handlers = new Map();
     
     // 注册默认交互处理器
@@ -248,13 +249,17 @@ export class InteractionSystem {
    */
   handleNPC(elementId, action) {
     const sceneData = this.getCurrentSceneData();
+    console.log('handleNPC sceneData:', sceneData?.id, 'interactives:', sceneData?.interactives?.length);
+    
     const interactive = sceneData?.interactives?.find(i => i.id === elementId);
     
     if (!interactive) {
+      console.warn(`交互对象未找到: ${elementId}`);
       return { success: false, reason: 'not_found' };
     }
 
     const npcId = interactive.npcId;
+    console.log(`handleNPC: elementId=${elementId}, npcId=${npcId}`);
     
     // 触发对话事件
     this.eventSystem.emit('dialogue:start', {
@@ -371,8 +376,15 @@ export class InteractionSystem {
    * 获取当前场景数据
    */
   getCurrentSceneData() {
-    // 这个方法需要从游戏引擎获取，这里简化处理
+    // 优先从gameEngine获取完整场景数据
+    if (this.gameEngine) {
+      const scene = this.gameEngine.getCurrentScene();
+      console.log('getCurrentSceneData from gameEngine:', scene?.id, 'interactives:', scene?.interactives?.length);
+      return scene;
+    }
+    // 降级方案：只返回位置ID
     const locationId = this.state.get('player.location');
+    console.log('getCurrentSceneData fallback:', locationId);
     return { id: locationId, interactives: [] };
   }
 

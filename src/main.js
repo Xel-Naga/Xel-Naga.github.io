@@ -136,7 +136,10 @@ const game = new AdventureGame();
 
 // DOM加载完成后初始化
 document.addEventListener('DOMContentLoaded', () => {
-  game.init();
+  console.log('DOM加载完成，开始初始化游戏...');
+  game.init().catch(err => {
+    console.error('游戏初始化异常:', err);
+  });
 });
 
 // 导出游戏实例供调试使用

@@ -95,14 +95,21 @@ export class UIRenderer {
 
     // 场景描述点击事件（委托）
     if (this.elements.sceneDescription) {
+      console.log('UIRenderer: 绑定场景描述点击事件');
       this.elements.sceneDescription.addEventListener('click', (e) => {
+        console.log('场景描述被点击', e.target);
         const target = e.target.closest('.highlight');
         if (target) {
+          console.log('点击了高亮元素:', target.dataset.id, target.dataset.type);
           const elementId = target.dataset.id;
           const action = target.dataset.type;
           this.handleHighlightClick(elementId, action, target);
+        } else {
+          console.log('点击的不是高亮元素');
         }
       });
+    } else {
+      console.warn('UIRenderer: 未找到场景描述元素');
     }
   }
 
@@ -153,8 +160,11 @@ export class UIRenderer {
 
     // 对话开始
     this.eventSystem.on('dialogue:start', (data) => {
+      console.log('UIRenderer收到dialogue:start事件:', data);
       if (this.dialogueModal) {
         this.dialogueModal.show(data.npcId);
+      } else {
+        console.warn('dialogueModal未初始化');
       }
     });
   }
@@ -272,10 +282,37 @@ export class UIRenderer {
   }
 
   /**
+   * 检查交互对象是否只有一个可执行动作
+   * @param {Object} interactive - 交互对象
+   * @returns {boolean}
+   */
+  hasOnlyOneAction(interactive) {
+    // 计算动作数量
+    let actionCount = 0;
+    
+    // NPC对话算一个动作
+    if (interactive.type === 'npc' || interactive.npcId) {
+      actionCount++;
+    }
+    
+    // 收集、检查、设备等各算一个动作
+    if (['collect', 'examine', 'device'].includes(interactive.type)) {
+      actionCount++;
+    }
+    
+    // 如果有clue类型，也单独处理
+    if (interactive.type === 'clue') {
+      actionCount++;
+    }
+    
+    return actionCount === 1;
+  }
+
+  /**
    * 处理高亮文字点击
    */
   handleHighlightClick(elementId, action, element) {
-    console.log(`点击: ${elementId}, 动作: ${action}`);
+    console.log(`UIRenderer.handleHighlightClick: elementId=${elementId}, action=${action}`);
 
     // 添加点击动画效果
     if (element && element.style) {
@@ -287,6 +324,7 @@ export class UIRenderer {
 
     // 获取当前场景数据
     const sceneData = this.currentScene || this.engine.getCurrentScene();
+    console.log(`UIRenderer: 场景数据`, sceneData?.id, 'interactives:', sceneData?.interactives?.length);
     
     // 如果是出口，直接执行移动
     if (action === 'move') {
@@ -296,12 +334,23 @@ export class UIRenderer {
 
     // 查找交互元素数据
     const interactive = sceneData?.interactives?.find(i => i.id === elementId);
+    console.log(`UIRenderer: 找到交互对象`, interactive ? interactive.name : '未找到');
     
     if (interactive) {
+      // 检查是否是NPC且只有一个动作（直接进对话）
+      if (interactive.type === 'npc' && this.hasOnlyOneAction(interactive)) {
+        console.log(`UIRenderer: NPC只有一个动作，直接进入对话`);
+        const npcId = interactive.npcId || elementId;
+        this.eventSystem.emit('dialogue:start', { npcId });
+        return;
+      }
+      
       // 显示交互弹窗
+      console.log(`UIRenderer: 调用interactionModal.show`);
       this.interactionModal.show(interactive, elementId);
     } else {
       // 直接执行交互
+      console.log(`UIRenderer: 直接执行交互`);
       this.executeInteraction(elementId, action);
     }
   }

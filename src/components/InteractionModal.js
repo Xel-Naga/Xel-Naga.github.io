@@ -16,8 +16,25 @@ export class InteractionModal {
    * @param {string} elementId - 元素ID
    */
   show(interactive, elementId) {
-    this.createModal(interactive, elementId);
-    this.bindEvents(interactive, elementId);
+    console.log(`InteractionModal.show:`, interactive.name, 'type:', interactive.type, 'id:', elementId);
+    
+    // 对于NPC类型，从chapter.npcs获取完整数据
+    let displayData = interactive;
+    if (interactive.type === 'npc' && interactive.npcId) {
+      const npcData = this.gameEngine.currentChapter?.npcs?.[interactive.npcId];
+      if (npcData) {
+        displayData = {
+          ...interactive,
+          name: npcData.name || interactive.name,
+          description: npcData.description || interactive.description,
+          avatar: npcData.avatar,
+        };
+      }
+    }
+    
+    this.createModal(displayData, elementId);
+    this.bindEvents(displayData, elementId);
+    console.log(`InteractionModal: 弹窗已创建并绑定事件`);
   }
 
   /**
@@ -50,6 +67,10 @@ export class InteractionModal {
           </div>
           
           <div class="modal-body">
+            ${interactive.avatar ? `
+            <div class="npc-avatar-section">
+              <div class="npc-avatar-large">${interactive.avatar}</div>
+            </div>` : ''}
             <div class="description-section">
               <p class="description-text">${interactive.description || '暂无描述'}</p>
             </div>
@@ -210,16 +231,16 @@ export class InteractionModal {
 
     // 动作按钮
     const actionBtns = this.modal.querySelectorAll('[data-action]');
+    console.log(`绑定动作按钮:`, actionBtns.length);
     actionBtns.forEach(btn => {
       btn.addEventListener('click', (e) => {
-        const action = e.target.dataset.action;
-        const id = e.target.dataset.id;
+        const action = e.currentTarget.dataset.action;
+        const id = e.currentTarget.dataset.id;
+        console.log(`点击动作按钮: action=${action}, id=${id}`);
         
-        // 关闭弹窗
-        this.close();
-        
-        // 执行交互
+        // 先执行交互（确保事件在弹窗关闭前触发）
         const result = this.gameEngine.handleInteraction(id, action);
+        console.log(`交互结果:`, result);
         
         // 触发事件
         if (result.success) {
@@ -229,6 +250,9 @@ export class InteractionModal {
             result: result,
           });
         }
+        
+        // 然后关闭弹窗
+        this.close();
       });
     });
 
@@ -246,12 +270,17 @@ export class InteractionModal {
    */
   close() {
     if (this.modal) {
-      this.modal.classList.remove('show');
+      const modalToClose = this.modal; // 保存当前modal引用
+      modalToClose.classList.remove('show');
       setTimeout(() => {
-        if (this.modal && this.modal.parentNode) {
-          this.modal.parentNode.removeChild(this.modal);
+        // 只移除保存的引用，而不是当前的 this.modal
+        if (modalToClose && modalToClose.parentNode) {
+          modalToClose.parentNode.removeChild(modalToClose);
         }
-        this.modal = null;
+        // 只有 this.modal 仍然指向同一个元素时才设为 null
+        if (this.modal === modalToClose) {
+          this.modal = null;
+        }
       }, 200);
     }
     

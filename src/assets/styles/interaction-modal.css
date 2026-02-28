@@ -129,6 +129,25 @@
   max-height: calc(80vh - 70px);
 }
 
+/* NPC头像区域 */
+.npc-avatar-section {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 15px;
+}
+
+.npc-avatar-large {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(139, 58, 58, 0.2);
+  border: 2px solid var(--color-faded-red-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+}
+
 /* 描述区域 */
 .description-section {
   margin-bottom: 15px;

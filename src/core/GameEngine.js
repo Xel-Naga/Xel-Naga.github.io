@@ -31,7 +31,7 @@ export class GameEngine {
     this.sceneManager = new SceneManager(this.state, this.eventSystem);
     
     // 初始化交互系统
-    this.interactionSystem = new InteractionSystem(this.state, this.eventSystem);
+    this.interactionSystem = new InteractionSystem(this.state, this.eventSystem, this);
     
     // 绑定事件监听
     this.bindEvents();
@@ -346,6 +346,13 @@ export class GameEngine {
     
     // 触发场景显示事件
     this.eventSystem.emit('scene:updated', sceneData);
+    
+    // 触发场景切换事件（用于清理对话历史等）
+    this.eventSystem.emit('scene:changed', { 
+      scene: sceneData, 
+      from: data.from, 
+      to: data.to 
+    });
   }
 
   /**

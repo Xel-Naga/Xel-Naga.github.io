@@ -11,10 +11,15 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
   
-  <link rel="stylesheet" href="./src/assets/styles/main.css">
-  <link rel="stylesheet" href="./src/assets/styles/interaction-modal.css">
-  <link rel="stylesheet" href="./src/assets/styles/quest-panel.css">
-  <link rel="stylesheet" href="./src/assets/styles/dialogue-modal.css">
+  <!-- 强制禁用缓存 -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  
+  <link rel="stylesheet" href="./src/assets/styles/main.css?v=2">
+  <link rel="stylesheet" href="./src/assets/styles/interaction-modal.css?v=2">
+  <link rel="stylesheet" href="./src/assets/styles/quest-panel.css?v=2">
+  <link rel="stylesheet" href="./src/assets/styles/dialogue-modal.css?v=2">
 </head>
 <body>
   <!-- 背景效果层 -->
@@ -124,10 +129,13 @@
     <div class="loading-content">
       <div class="loading-spinner"></div>
       <p class="loading-text">正在载入...</p>
+      <p style="font-size: 0.75rem; color: var(--color-bone-white-dark); margin-top: 15px;">
+        如果游戏无法正常运行，请按 Ctrl+F5 强制刷新
+      </p>
     </div>
   </div>
 
   <!-- 脚本 -->
-  <script type="module" src="./src/main.js"></script>
+  <script type="module" src="./src/main.js?v=2"></script>
 </body>
 </html>
