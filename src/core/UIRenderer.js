@@ -52,15 +52,15 @@ export class UIRenderer {
       // 场景相关
       currentLocation: document.getElementById('current-location'),
       sceneDescription: document.getElementById('scene-description'),
-      
+
       // 反馈区域
       feedbackLog: document.getElementById('feedback-log'),
-      
-      // 用户信息面板 - 状态条
-      staminaFill: document.getElementById('stamina-fill'),
-      sanityFill: document.getElementById('sanity-fill'),
-      temperatureFill: document.getElementById('temperature-fill'),
-      
+
+      // 用户信息面板 - 状态显示
+      staminaValue: document.getElementById('stamina-value'),
+      sanityValue: document.getElementById('sanity-value'),
+      temperatureValue: document.getElementById('temperature-value'),
+
       // 动作按钮
       actionButtons: document.querySelectorAll('.action-btn'),
       
@@ -421,6 +421,72 @@ export class UIRenderer {
   }
 
   /**
+   * 获取状态颜色类
+   * @param {number} percent - 当前值百分比
+   * @returns {string} 颜色类名
+   */
+  getStatusColorClass(percent) {
+    if (percent >= 60) return 'normal';
+    if (percent >= 30) return 'warning';
+    return 'danger';
+  }
+
+  /**
+   * 获取体温颜色类（特殊阈值）
+   * @param {number} temp - 体温值
+   * @returns {string} 颜色类名
+   */
+  getTemperatureColorClass(temp) {
+    if (temp >= 36) return 'normal';
+    if (temp >= 34) return 'warning';
+    return 'danger';
+  }
+
+  /**
+   * 获取体力状态描述
+   * @param {number} current - 当前体力
+   * @param {number} max - 最大体力
+   * @returns {string} 描述文本
+   */
+  getStaminaDesc(current, max) {
+    const percent = (current / max) * 100;
+    if (percent >= 80) return '状态良好';
+    if (percent >= 60) return '轻微疲劳';
+    if (percent >= 40) return '中度疲劳';
+    if (percent >= 20) return '严重疲劳';
+    return '体力耗尽，行动受限';
+  }
+
+  /**
+   * 获取理智状态描述
+   * @param {number} current - 当前理智
+   * @param {number} max - 最大理智
+   * @returns {string} 描述文本
+   */
+  getSanityDesc(current, max) {
+    const percent = (current / max) * 100;
+    if (percent >= 80) return '状态稳定';
+    if (percent >= 60) return '略有不安';
+    if (percent >= 40) return '心神不宁';
+    if (percent >= 20) return '意识模糊';
+    return '理智崩溃，危险';
+  }
+
+  /**
+   * 获取体温状态描述
+   * @param {number} temp - 体温值
+   * @returns {string} 描述文本
+   */
+  getTemperatureDesc(temp) {
+    if (temp >= 37) return '体温正常';
+    if (temp >= 36) return '轻微失温';
+    if (temp >= 35) return '轻度失温';
+    if (temp >= 34) return '中度失温';
+    if (temp >= 32) return '重度失温';
+    return '极度危险，危及生命';
+  }
+
+  /**
    * 更新状态面板
    */
   updateStatusPanel() {
@@ -428,23 +494,24 @@ export class UIRenderer {
     if (!status) return;
 
     // 体力
-    if (this.elements.staminaFill) {
+    if (this.elements.staminaValue) {
       const staminaPercent = (status.stamina.current / status.stamina.max) * 100;
-      this.elements.staminaFill.style.width = `${staminaPercent}%`;
+      this.elements.staminaValue.textContent = `${status.stamina.current}/${status.stamina.max}`;
+      this.elements.staminaValue.className = `status-value ${this.getStatusColorClass(staminaPercent)}`;
     }
 
     // 理智
-    if (this.elements.sanityFill) {
+    if (this.elements.sanityValue) {
       const sanityPercent = (status.sanity.current / status.sanity.max) * 100;
-      this.elements.sanityFill.style.width = `${sanityPercent}%`;
+      this.elements.sanityValue.textContent = `${status.sanity.current}/${status.sanity.max}`;
+      this.elements.sanityValue.className = `status-value ${this.getStatusColorClass(sanityPercent)}`;
     }
 
     // 体温
-    if (this.elements.temperatureFill) {
+    if (this.elements.temperatureValue) {
       const temp = status.temperature.current;
-      // 体温条显示范围 28-40°C
-      const tempPercent = ((temp - 28) / (40 - 28)) * 100;
-      this.elements.temperatureFill.style.width = `${Math.max(0, Math.min(100, tempPercent))}%`;
+      this.elements.temperatureValue.textContent = `${temp.toFixed(1)}°C`;
+      this.elements.temperatureValue.className = `status-value ${this.getTemperatureColorClass(temp)}`;
     }
   }
 

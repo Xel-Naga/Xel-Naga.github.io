@@ -67,6 +67,11 @@ class AdventureGame {
    * 绑定全局事件
    */
   bindGlobalEvents() {
+    // 监听游戏结束事件
+    this.eventSystem.on('game:over', (data) => {
+      this.handleGameOver(data);
+    });
+
     // 自动保存
     setInterval(() => {
       this.autoSave();
@@ -83,6 +88,85 @@ class AdventureGame {
     window.addEventListener('beforeunload', (e) => {
       this.autoSave();
     });
+  }
+
+  /**
+   * 处理游戏结束
+   * @param {Object} data - 游戏结束数据
+   */
+  handleGameOver(data) {
+    console.log('游戏结束:', data);
+
+    // 创建游戏结束面板
+    const overlay = document.createElement('div');
+    overlay.id = 'game-over-overlay';
+    overlay.className = 'game-over-overlay';
+    overlay.innerHTML = `
+      <div class="game-over-content">
+        <h1 class="game-over-title">${data.title || '游戏结束'}</h1>
+        <p class="game-over-description">${data.description || ''}</p>
+        <p class="game-over-hint">${data.hint || ''}</p>
+        <button class="game-over-btn" onclick="location.reload()">重新开始</button>
+      </div>
+    `;
+
+    // 添加样式
+    const style = document.createElement('style');
+    style.textContent = `
+      .game-over-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.9);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 10000;
+      }
+      .game-over-content {
+        text-align: center;
+        color: #e0e0e0;
+        max-width: 600px;
+        padding: 40px;
+      }
+      .game-over-title {
+        font-size: 48px;
+        color: #4a9eff;
+        margin-bottom: 30px;
+        text-shadow: 0 0 20px rgba(74, 158, 255, 0.5);
+      }
+      .game-over-description {
+        font-size: 18px;
+        line-height: 1.8;
+        margin-bottom: 20px;
+        color: #b0b0b0;
+      }
+      .game-over-hint {
+        font-size: 14px;
+        color: #808080;
+        font-style: italic;
+        margin-bottom: 40px;
+      }
+      .game-over-btn {
+        padding: 15px 40px;
+        font-size: 18px;
+        background: #4a9eff;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+      .game-over-btn:hover {
+        background: #6bb3ff;
+        transform: scale(1.05);
+      }
+    `;
+
+    document.head.appendChild(style);
+    document.body.appendChild(overlay);
   }
 
   /**

@@ -279,12 +279,34 @@ export class GameEngine {
    */
   handleStatusThreshold(data) {
     console.log(`状态阈值事件: ${data.status} ${data.type} ${data.threshold}`);
-    
+
+    // 处理重度失温导致的游戏结束
+    if (data.status === 'temperature' && data.threshold === 28 && data.type === 'below') {
+      this.triggerGameOver('frozen_death');
+      return;
+    }
+
     // 根据状态和阈值生成反馈
     const feedback = this.generateThresholdFeedback(data);
     if (feedback) {
       this.eventSystem.emit('feedback:show', { message: feedback, type: 'status' });
     }
+  }
+
+  /**
+   * 触发游戏结束
+   * @param {string} endingId - 结局ID
+   */
+  triggerGameOver(endingId) {
+    console.log(`游戏结束: ${endingId}`);
+
+    // 显示游戏结束界面
+    this.eventSystem.emit('game:over', {
+      endingId: endingId,
+      title: '冻死',
+      description: '刺骨的寒意终于战胜了你的意志。在失去意识前，你仿佛看到了那座道观中闪烁着诡异的火光...',
+      hint: '在寒冷的天气中，请务必注意保暖，及时寻找温暖的环境。'
+    });
   }
 
   /**

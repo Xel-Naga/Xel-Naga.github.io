@@ -188,12 +188,17 @@ export class GameState {
 
     const oldValue = status.current;
     let newValue = oldValue + delta;
-    
-    // 限制在范围内
-    newValue = Math.max(0, Math.min(newValue, status.max));
-    
+
+    // 体温使用摄氏度范围，最小值为28°C（重度失温线），最大值为40°C
+    if (statusName === 'temperature') {
+      newValue = Math.max(28, Math.min(newValue, status.max));
+    } else {
+      // 其他状态使用0-100范围
+      newValue = Math.max(0, Math.min(newValue, status.max));
+    }
+
     this.set(`status.${statusName}.current`, newValue);
-    
+
     // 检查阈值事件
     this.checkStatusThreshold(statusName, oldValue, newValue);
   }

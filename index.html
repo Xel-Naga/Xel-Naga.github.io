@@ -41,59 +41,48 @@
     <!-- 用户信息面板 -->
     <aside class="user-info-panel">
       <div class="user-info-border">
-        <!-- 用户基本信息 -->
-        <div class="user-basic">
-          <div class="user-avatar">👤</div>
-          <div class="user-details">
-            <div class="user-name">林墨</div>
-            <div class="user-location">
+        <!-- 第一行：用户基本信息 + 状态 -->
+        <div class="user-status-row">
+          <div class="user-basic">
+            <span class="user-name">林墨</span>
+            <span class="user-location">
               <span class="location-icon">📍</span>
               <span id="current-location">载入中...</span>
+            </span>
+          </div>
+          <div class="status-display">
+            <div class="status-item" data-status="stamina" title="体力">
+              <span class="status-icon">⚡</span>
+              <span class="status-value" id="stamina-value">100/100</span>
+            </div>
+            <div class="status-item" data-status="sanity" title="理智">
+              <span class="status-icon">🧠</span>
+              <span class="status-value" id="sanity-value">100/100</span>
+            </div>
+            <div class="status-item" data-status="temperature" title="体温">
+              <span class="status-icon">🌡️</span>
+              <span class="status-value" id="temperature-value">37.0°C</span>
             </div>
           </div>
         </div>
-        
-        <!-- 环境信息 -->
-        <div class="environment-info">
-          <div class="env-item env-date" id="env-date">
+
+        <!-- 第二行：环境信息（平铺） -->
+        <div class="environment-row">
+          <div class="env-item" id="env-date">
             <span class="env-icon">📅</span>
-            <span class="env-value">2025年1月15日 乙巳年</span>
+            <span class="env-value">2025年1月15日</span>
           </div>
-          <div class="env-row">
-            <div class="env-item" id="env-time">
-              <span class="env-icon">🕐</span>
-              <span class="env-value">黄昏</span>
-            </div>
-            <div class="env-item" id="env-weather">
-              <span class="env-icon">🌨️</span>
-              <span class="env-value">暴雪</span>
-            </div>
-            <div class="env-item" id="env-temp">
-              <span class="env-icon">🌡️</span>
-              <span class="env-value">-5°C</span>
-            </div>
+          <div class="env-item" id="env-time">
+            <span class="env-icon">🕐</span>
+            <span class="env-value">黄昏</span>
           </div>
-        </div>
-        
-        <!-- 状态条 -->
-        <div class="status-bars">
-          <div class="status-bar-item" data-status="stamina" title="体力">
-            <span class="status-icon">⚡</span>
-            <div class="status-bar">
-              <div class="status-fill" id="stamina-fill"></div>
-            </div>
+          <div class="env-item" id="env-weather">
+            <span class="env-icon">🌨️</span>
+            <span class="env-value">暴雪</span>
           </div>
-          <div class="status-bar-item" data-status="sanity" title="理智">
-            <span class="status-icon">🧠</span>
-            <div class="status-bar">
-              <div class="status-fill" id="sanity-fill"></div>
-            </div>
-          </div>
-          <div class="status-bar-item" data-status="temperature" title="体温">
-            <span class="status-icon">🌡️</span>
-            <div class="status-bar">
-              <div class="status-fill" id="temperature-fill"></div>
-            </div>
+          <div class="env-item" id="env-temp">
+            <span class="env-icon">🌡️</span>
+            <span class="env-value">-5°C</span>
           </div>
         </div>
       </div>
