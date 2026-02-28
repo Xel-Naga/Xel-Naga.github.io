@@ -310,6 +310,33 @@ export class GameState {
     }
   }
 
+  // ========== 道具系统扩展方法 ==========
+
+  /**
+   * 获取背包中的所有道具ID
+   * @returns {string[]}
+   */
+  getInventoryIds() {
+    return this.get('player.inventory') || [];
+  }
+
+  /**
+   * 检查道具是否在背包中
+   * @param {string} itemId - 道具ID
+   * @returns {boolean}
+   */
+  hasItem(itemId) {
+    return this.getInventoryIds().includes(itemId);
+  }
+
+  /**
+   * 获取背包中道具数量
+   * @returns {number}
+   */
+  getInventoryCount() {
+    return this.getInventoryIds().length;
+  }
+
   /**
    * 记录已检查对象
    * @param {string} objectId - 对象ID
@@ -390,6 +417,33 @@ export class GameState {
    */
   getQuestProgress(questId) {
     return this.get(`quests.progress.${questId}`) || { currentStep: 0, completedSteps: [] };
+  }
+
+  /**
+   * 检查任务是否已完成
+   * @param {string} questId - 任务ID
+   * @returns {boolean}
+   */
+  isQuestCompleted(questId) {
+    return this.get('quests.completed').includes(questId);
+  }
+
+  /**
+   * 检查任务是否在进行中
+   * @param {string} questId - 任务ID
+   * @returns {boolean}
+   */
+  isQuestActive(questId) {
+    return this.get('quests.active').includes(questId);
+  }
+
+  /**
+   * 检查任务是否失败
+   * @param {string} questId - 任务ID
+   * @returns {boolean}
+   */
+  isQuestFailed(questId) {
+    return this.get('quests.failed').includes(questId);
   }
 
   /**

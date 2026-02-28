@@ -101,7 +101,7 @@ const chapter1Data = {
           sanity: 100,
           temperature: 37,
         },
-        addItems: ['item_level', 'item_notebook', 'item_keychain', 'item_tape_measure'],
+        addItems: ['item_level', 'item_notebook', 'item_keychain', 'item_tape_measure', 'item_flashlight', 'item_battery', 'item_energy_bar'],
       },
     },
 
@@ -769,6 +769,7 @@ const chapter1Data = {
       type: 'consumable',
       icon: '💊',
       usable: true,
+      combinable: false,
       effects: { sanity: 10, stamina: -5 },
     },
     item_warning_flyer: {
@@ -852,7 +853,96 @@ const chapter1Data = {
       type: 'tool',
       icon: '🔦',
     },
+
+    // 可组合的道具示例
+    item_flashlight: {
+      id: 'item_flashlight',
+      name: '手电筒',
+      description: '普通的手电筒，电池有些不足。',
+      type: 'tool',
+      icon: '🔦',
+      usable: true,
+      combinable: true,
+      effects: { sanity: 5 },
+    },
+    item_battery: {
+      id: 'item_battery',
+      name: '电池',
+      description: '两节备用电池。',
+      type: 'consumable',
+      icon: '🔋',
+      usable: true,
+      combinable: true,
+      effects: { stamina: 3 },
+    },
+    item_flashlight_full: {
+      id: 'item_flashlight_full',
+      name: '充满电的手电筒',
+      description: '装上新电池的手电筒，亮度充足。',
+      type: 'tool',
+      icon: '🔦',
+      usable: true,
+      effects: { sanity: 10 },
+    },
+
+    // 能量棒
+    item_energy_bar: {
+      id: 'item_energy_bar',
+      name: '能量棒',
+      description: '高热量能量棒，可以快速补充体力。',
+      type: 'consumable',
+      icon: '🍫',
+      usable: true,
+      effects: { stamina: 15 },
+    },
+
+    // 暖宝宝
+    item_warm_patch: {
+      id: 'item_warm_patch',
+      name: '暖宝宝',
+      description: '一次性取暖贴，可以暂时抵御寒冷。',
+      type: 'consumable',
+      icon: '🧣',
+      usable: true,
+      combinable: true,
+      effects: { temperature: 3 },
+    },
+    item_bandage: {
+      id: 'item_bandage',
+      name: '绷带',
+      description: '干净的绷带，可以处理轻微伤口。',
+      type: 'consumable',
+      icon: '🩹',
+      usable: true,
+      combinable: true,
+      effects: { stamina: 5 },
+    },
+    item_first_aid_kit: {
+      id: 'item_first_aid_kit',
+      name: '急救包',
+      description: '完整的急救用品，包含绷带、消毒酒精、创可贴等。',
+      type: 'gear',
+      icon: '🧰',
+      usable: true,
+      effects: { stamina: 20, sanity: 5 },
+    },
   },
+
+  // ========== 道具组合配方 ==========
+  itemRecipes: [
+    {
+      id: 'recipe_flashlight',
+      ingredients: ['item_flashlight', 'item_battery'],
+      resultId: 'item_flashlight_full',
+      resultName: '充满电的手电筒',
+    },
+    {
+      id: 'recipe_first_aid',
+      ingredients: ['item_bandage', 'item_warm_patch'],
+      resultId: 'item_first_aid_kit',
+      resultName: '急救包',
+    },
+  ],
 
   // ========== 线索定义 ==========
   clues: {

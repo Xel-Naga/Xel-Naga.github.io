@@ -1,0 +1,360 @@
+/**
+ * 道具面板样式
+ * 《悬观谜案：百年轮回》
+ */
+
+/* ===== 隐藏状态 ===== */
+.inventory-modal.hidden {
+  display: none;
+}
+
+/* ===== 道具面板容器 ===== */
+.inventory-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: fadeIn 0.3s ease;
+}
+
+.inventory-content {
+  background: var(--color-ink-black-light);
+  border: 1px solid var(--color-faded-red-dark);
+  border-radius: 8px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  animation: slideUp 0.3s ease;
+}
+
+/* ===== 头部 ===== */
+.inventory-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid var(--color-faded-red-dark);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.inventory-title {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  color: var(--color-bone-white);
+  margin: 0;
+}
+
+.inventory-close {
+  background: none;
+  border: none;
+  color: var(--color-bone-white-dark);
+  font-size: 1.8rem;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  transition: color var(--transition-fast);
+}
+
+.inventory-close:hover {
+  color: var(--color-faded-red-light);
+}
+
+/* ===== 分类筛选 ===== */
+.inventory-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--color-faded-red-dark);
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.filter-btn {
+  background: transparent;
+  border: 1px solid var(--color-faded-red-dark);
+  color: var(--color-bone-white-dark);
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.filter-btn:hover {
+  background: rgba(139, 58, 58, 0.2);
+  border-color: var(--color-faded-red);
+}
+
+.filter-btn.active {
+  background: var(--color-faded-red);
+  border-color: var(--color-faded-red);
+  color: var(--color-bone-white);
+}
+
+/* ===== 主体区域 ===== */
+.inventory-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  min-height: 300px;
+}
+
+/* ===== 道具格子 ===== */
+.inventory-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 10px;
+  padding: 15px;
+  overflow-y: auto;
+  max-height: 400px;
+  border-right: 1px solid var(--color-faded-red-dark);
+}
+
+.inventory-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 5px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--color-faded-red-dark);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.inventory-slot:hover {
+  background: rgba(139, 58, 58, 0.2);
+  border-color: var(--color-faded-red);
+  transform: translateY(-2px);
+}
+
+.inventory-slot.selected {
+  background: rgba(139, 58, 58, 0.3);
+  border-color: var(--color-faded-red);
+  box-shadow: 0 0 10px rgba(139, 58, 58, 0.3);
+}
+
+.inventory-slot.empty {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.inventory-slot.empty:hover {
+  transform: none;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.inventory-slot .item-icon {
+  font-size: 1.8rem;
+  margin-bottom: 5px;
+}
+
+.inventory-slot .item-name {
+  font-size: 0.75rem;
+  color: var(--color-bone-white-dark);
+  text-align: center;
+  line-height: 1.2;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inventory-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--color-bone-white-dark);
+  font-style: italic;
+}
+
+/* ===== 详情面板 ===== */
+.inventory-details {
+  width: 220px;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  background: rgba(0, 0, 0, 0.2);
+  overflow-y: auto;
+}
+
+.details-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--color-bone-white-dark);
+  font-style: italic;
+  text-align: center;
+}
+
+.details-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--color-faded-red-dark);
+}
+
+.details-icon {
+  font-size: 2rem;
+}
+
+.details-name {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  color: var(--color-bone-white);
+}
+
+.details-description {
+  margin-bottom: 15px;
+}
+
+.details-description p {
+  font-size: 0.85rem;
+  color: var(--color-bone-white-dark);
+  line-height: 1.6;
+}
+
+.details-effects,
+.details-type {
+  margin-bottom: 10px;
+  font-size: 0.85rem;
+}
+
+.effects-label,
+.type-label {
+  color: var(--color-bone-white-dark);
+}
+
+.effects-value {
+  color: var(--color-temperature);
+}
+
+.type-value {
+  color: var(--color-examine);
+}
+
+/* ===== 操作按钮 ===== */
+.details-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 15px;
+  border-top: 1px solid var(--color-faded-red-dark);
+}
+
+.details-actions .action-btn {
+  padding: 10px 15px;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.use-btn {
+  background: var(--color-faded-red);
+  color: var(--color-bone-white);
+}
+
+.use-btn:hover:not(.disabled) {
+  background: var(--color-faded-red-light);
+}
+
+.combine-btn {
+  background: var(--color-npc);
+  color: var(--color-bone-white);
+}
+
+.combine-btn:hover:not(.disabled) {
+  background: #9B6BC8;
+}
+
+.discard-btn {
+  background: transparent;
+  border: 1px solid var(--color-danger) !important;
+  color: var(--color-danger);
+}
+
+.discard-btn:hover {
+  background: rgba(184, 91, 91, 0.2);
+}
+
+.action-btn.disabled,
+.action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ===== 组合提示 ===== */
+.combine-hint {
+  margin-top: 10px;
+  padding: 8px;
+  background: rgba(139, 91, 184, 0.2);
+  border-radius: 4px;
+  font-size: 0.8rem;
+  color: var(--color-npc);
+  text-align: center;
+}
+
+/* ===== 动画 ===== */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===== 响应式 ===== */
+@media (max-width: 500px) {
+  .inventory-content {
+    width: 95%;
+    max-height: 90vh;
+  }
+
+  .inventory-body {
+    flex-direction: column;
+  }
+
+  .inventory-grid {
+    max-height: 200px;
+    border-right: none;
+    border-bottom: 1px solid var(--color-faded-red-dark);
+  }
+
+  .inventory-details {
+    width: 100%;
+    min-height: 180px;
+  }
+
+  .inventory-filters {
+    justify-content: center;
+  }
+
+  .filter-btn {
+    padding: 5px 10px;
+    font-size: 0.8rem;
+  }
+}

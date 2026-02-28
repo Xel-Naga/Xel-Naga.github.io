@@ -6,6 +6,7 @@
 import { InteractionModal } from '../components/InteractionModal.js';
 import { QuestPanel } from '../components/QuestPanel.js';
 import { DialogueModal } from '../components/DialogueModal.js';
+import { InventoryModal } from '../components/InventoryModal.js';
 
 export class UIRenderer {
   constructor(engine, eventSystem) {
@@ -15,6 +16,7 @@ export class UIRenderer {
     this.currentScene = null;
     this.interactionModal = null;
     this.questPanel = null;
+    this.inventoryModal = null;
   }
 
   /**
@@ -30,6 +32,7 @@ export class UIRenderer {
     this.interactionModal = new InteractionModal(this.eventSystem, this.engine);
     this.questPanel = new QuestPanel(this.eventSystem, this.engine);
     this.dialogueModal = new DialogueModal(this.eventSystem, this.engine);
+    this.inventoryModal = new InventoryModal(this.eventSystem, this.engine);
     
     // 绑定UI事件
     this.bindEvents();
@@ -638,10 +641,23 @@ export class UIRenderer {
    * 显示道具栏模态框
    */
   showInventoryModal() {
+    // 使用 InventoryModal 组件显示背包
+    if (this.inventoryModal) {
+      this.inventoryModal.show();
+    } else {
+      // 降级方案：使用旧的简单显示
+      this.showInventoryModalLegacy();
+    }
+  }
+
+  /**
+   * 旧版道具栏显示（降级方案）
+   */
+  showInventoryModalLegacy() {
     const items = this.engine.getInventory();
-    
+
     let content = '<div class="inventory-grid">';
-    
+
     // 生成道具格子
     for (let i = 0; i < 12; i++) {
       const item = items[i];
@@ -651,7 +667,7 @@ export class UIRenderer {
         content += '<div class="inventory-slot empty"></div>';
       }
     }
-    
+
     content += '</div>';
     content += `<p style="margin-top: 15px; text-align: center; color: var(--color-bone-white-dark);">已使用: ${items.length} / 12</p>`;
 

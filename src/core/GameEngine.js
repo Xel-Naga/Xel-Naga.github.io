@@ -446,4 +446,248 @@ export class GameEngine {
     if (!this.currentChapter || !this.currentChapter.clues) return null;
     return this.currentChapter.clues[clueId];
   }
+
+  // ========== 道具系统方法 ==========
+
+  /**
+   * 使用道具
+   * @param {string} itemId - 道具ID
+   * @returns {Object} 使用结果
+   */
+  useItem(itemId) {
+    // 检查道具是否存在
+    const item = this.getItemData(itemId);
+    if (!item) {
+      return { success: false, message: '道具不存在' };
+    }
+
+    // 检查是否可使用
+    if (!item.usable) {
+      return { success: false, message: '此道具无法使用' };
+    }
+
+    // 检查使用条件
+    const canUse = this.checkItemUseCondition(item);
+    if (!canUse.success) {
+      return canUse;
+    }
+
+    // 应用效果
+    if (item.effects) {
+      const effects = item.effects;
+      let message = '';
+
+      if (effects.stamina) {
+        this.state.modifyStatus('stamina', effects.stamina);
+        message += effects.stamina > 0 ? `体力+${effects.stamina}，` : `体力${effects.stamina}，`;
+      }
+      if (effects.sanity) {
+        this.state.modifyStatus('sanity', effects.sanity);
+        message += effects.sanity > 0 ? `理智+${effects.sanity}，` : `理智${effects.sanity}，`;
+      }
+      if (effects.temperature) {
+        this.state.modifyStatus('temperature', effects.temperature);
+        message += effects.temperature > 0 ? `体温+${effects.temperature}°C，` : `体温${effects.temperature}°C，`;
+      }
+      if (effects.intuition) {
+        this.state.modifyStatus('intuition', effects.intuition);
+        message += `直觉+${effects.intuition}，`;
+      }
+
+      // 移除消耗品
+      if (item.type === 'consumable') {
+        this.state.removeItem(itemId);
+      }
+
+      return {
+        success: true,
+        message: message.slice(0, -1) || `使用了 ${item.name}`,
+        effects: effects,
+      };
+    }
+
+    return { success: true, message: `使用了 ${item.name}` };
+  }
+
+  /**
+   * 检查道具使用条件
+   * @param {Object} item - 道具数据
+   * @returns {Object} 检查结果
+   */
+  checkItemUseCondition(item) {
+    // 检查体力条件
+    if (item.requiredStamina && item.requiredStamina.min) {
+      const stamina = this.state.get('status.stamina.current');
+      if (stamina < item.requiredStamina.min) {
+        return { success: false, message: `体力不足，需要至少${item.requiredStamina.min}点体力` };
+      }
+    }
+
+    // 检查理智条件
+    if (item.requiredSanity && item.requiredSanity.min) {
+      const sanity = this.state.get('status.sanity.current');
+      if (sanity < item.requiredSanity.min) {
+        return { success: false, message: `理智不足，需要至少${item.requiredSanity.min}点理智` };
+      }
+    }
+
+    // 检查体温条件
+    if (item.requiredTemperature && item.requiredTemperature.min) {
+      const temperature = this.state.get('status.temperature.current');
+      if (temperature < item.requiredTemperature.min) {
+        return { success: false, message: `体温过低，无法使用此道具` };
+      }
+    }
+
+    return { success: true };
+  }
+
+  /**
+   * 组合道具
+   * @param {string} itemId1 - 道具1 ID
+   * @param {string} itemId2 - 道具2 ID
+   * @returns {Object} 组合结果
+   */
+  combineItems(itemId1, itemId2) {
+    // 检查两个道具是否都在背包中
+    const inventory = this.state.getInventoryIds();
+    if (!inventory.includes(itemId1) || !inventory.includes(itemId2)) {
+      return { success: false, message: '背包中缺少必要的道具' };
+    }
+
+    // 查找组合配方
+    const recipes = this.getItemRecipes();
+    const recipe = recipes.find(r =>
+      r.ingredients.includes(itemId1) && r.ingredients.includes(itemId2)
+    );
+
+    if (!recipe) {
+      return { success: false, message: '这两个道具无法组合' };
+    }
+
+    // 移除原道具
+    this.state.removeItem(itemId1);
+    this.state.removeItem(itemId2);
+
+    // 添加新道具
+    this.state.addItem(recipe.resultId);
+
+    return {
+      success: true,
+      message: `组合成功: ${recipe.resultName}`,
+      resultId: recipe.resultId,
+      resultName: recipe.resultName,
+    };
+  }
+
+  /**
+   * 获取道具组合配方
+   * @returns {Array} 配方数组
+   */
+  getItemRecipes() {
+    // 可以从章节数据或单独的配置中读取配方
+    // 这里使用简单的示例配方
+    const recipes = [
+      // 示例：安眠药 + 某种道具 = 强化安眠药（暂时为空）
+    ];
+
+    // 如果章节数据中有配方，也添加进去
+    if (this.currentChapter && this.currentChapter.itemRecipes) {
+      return [...this.currentChapter.itemRecipes, ...recipes];
+    }
+
+    return recipes;
+  }
+
+  /**
+   * 丢弃道具
+   * @param {string} itemId - 道具ID
+   * @returns {Object} 丢弃结果
+   */
+  discardItem(itemId) {
+    // 检查道具是否存在
+    const item = this.getItemData(itemId);
+    if (!item) {
+      return { success: false, message: '道具不存在' };
+    }
+
+    // 检查是否可丢弃
+    if (item.cannotDiscard) {
+      return { success: false, message: '此道具无法丢弃' };
+    }
+
+    // 移除道具
+    this.state.removeItem(itemId);
+
+    return {
+      success: true,
+      message: `已丢弃 ${item.name}`,
+    };
+  }
+
+  // ========== 场景切换任务依赖检查 ==========
+
+  /**
+   * 检查是否可以移动到目标位置
+   * @param {string} targetLocation - 目标位置ID
+   * @returns {Object} 检查结果
+   */
+  canMoveTo(targetLocation) {
+    // 获取当前场景数据
+    const currentLocation = this.state.get('player.location');
+    const currentScene = this.sceneManager.loadScene(currentLocation);
+
+    // 查找对应的出口
+    const exit = currentScene?.exits?.find(e => e.target === targetLocation);
+    if (!exit) {
+      return { success: false, reason: 'no_exit', message: '无法前往该位置' };
+    }
+
+    // 检查是否锁定
+    if (exit.locked) {
+      return { success: false, reason: 'locked', message: exit.lockReason || '道路被封锁' };
+    }
+
+    // 检查任务依赖
+    if (exit.requiredQuest) {
+      const questCompleted = this.state.isQuestCompleted(exit.requiredQuest);
+      if (!questCompleted) {
+        const quest = this.getQuestData(exit.requiredQuest);
+        const questName = quest ? quest.name : exit.requiredQuest;
+        return {
+          success: false,
+          reason: 'quest_required',
+          message: `需要完成任务「${questName}」才能前往`,
+          requiredQuest: exit.requiredQuest,
+        };
+      }
+    }
+
+    // 检查是否需要道具
+    if (exit.requiredItem) {
+      const hasItem = this.state.hasItem(exit.requiredItem);
+      if (!hasItem) {
+        const item = this.getItemData(exit.requiredItem);
+        const itemName = item ? item.name : exit.requiredItem;
+        return {
+          success: false,
+          reason: 'item_required',
+          message: `需要道具「${itemName}」才能前往`,
+          requiredItem: exit.requiredItem,
+        };
+      }
+    }
+
+    return { success: true };
+  }
+
+  /**
+   * 获取任务数据
+   * @param {string} questId - 任务ID
+   * @returns {Object|null}
+   */
+  getQuestData(questId) {
+    if (!this.currentChapter || !this.currentChapter.quests) return null;
+    return this.currentChapter.quests.find(q => q.id === questId);
+  }
 }

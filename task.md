@@ -312,31 +312,79 @@ TaositStory/
 
 ---
 
-## 待完成任务（阶段二剩余）
+## 待完成任务（阶段三）
 
-### 阶段二：核心系统增强（第3-4周）
+### 阶段三：系统完善与内容扩展
 
 1. ✅ **对话系统UI** - 已完成
 
-2. **道具使用系统**
-   - 道具使用界面
-   - 道具效果实现
-   - 道具与场景交互
+2. ✅ **道具使用系统** - 已完成
+   - 道具获取、查看、使用、组合、丢弃
+   - 背包面板 UI
+   - 道具组合配方
+   - 场景切换任务依赖检查
 
-3. **第二章数据**
+3. ✅ **任务系统完善** - 已完成
+   - 主线/支线任务分类
+   - 任务自动触发
+   - 任务进度追踪
+
+4. **第二章数据**
    - 根据剧本创建第二章场景
    - 新增NPC（玄真道长、李教授等）
    - 新增场景（斋堂、藏经阁等）
 
-4. **音频系统**
+5. **音频系统**
    - 背景音乐
    - 音效反馈
    - 环境音
 
-5. **测试和优化**
+6. **测试和优化**
    - 完整游戏流程测试
    - 性能优化
    - Bug修复
+
+---
+
+## 最近更新 - 阶段三进展
+
+### 2026年3月1日 - 道具使用系统 ✅
+
+**新增文件**：
+- `src/components/InventoryModal.js` - 道具面板组件
+- `src/assets/styles/inventory-modal.css` - 道具面板样式
+
+**功能特性**：
+- 道具分类筛选（全部/工具/消耗品/文件/钥匙/装备/书籍）
+- 道具详情面板（名称、描述、效果）
+- 道具使用功能（支持消耗品和可使用道具）
+- 道具组合功能（检测可组合道具并执行组合）
+- 道具丢弃功能（带确认提示）
+- 快捷键 **I** 快速打开背包
+
+**GameState.js 扩展**：
+- `getInventoryIds()` - 获取背包道具ID列表
+- `hasItem(itemId)` - 检查道具是否拥有
+- `getInventoryCount()` - 获取道具数量
+- `isQuestCompleted(questId)` - 检查任务是否完成
+- `isQuestActive(questId)` - 检查任务是否进行中
+- `isQuestFailed(questId)` - 检查任务是否失败
+
+**GameEngine.js 扩展**：
+- `useItem(itemId)` - 使用道具，应用效果
+- `combineItems(itemId1, itemId2)` - 组合两个道具
+- `discardItem(itemId)` - 丢弃道具
+- `canMoveTo(targetLocation)` - 检查场景切换条件
+- `getItemRecipes()` - 获取道具组合配方
+
+**场景切换任务依赖**：
+- 出口增加 `requiredQuest` 字段检查
+- 出口增加 `requiredItem` 字段检查
+- 不满足条件时显示提示信息
+
+**示例组合配方**：
+- 手电筒 + 电池 → 手电筒（充足电）
+- 绷带 + 暖宝宝 → 急救包
 
 ---
 
@@ -370,13 +418,15 @@ TaositStory/
 | src/components/InteractionModal.js | 交互弹窗 | ~8.9KB |
 | src/components/QuestPanel.js | 任务面板 | ~7.1KB |
 | src/components/DialogueModal.js | 对话弹窗 | ~7.9KB |
+| src/components/InventoryModal.js | 道具面板 | ~8KB |
 | src/data/chapter1.js | 第一章数据 | ~41KB |
 | src/assets/styles/main.css | 主样式表 | ~16KB |
 | src/assets/styles/interaction-modal.css | 弹窗样式 | ~5.7KB |
 | src/assets/styles/quest-panel.css | 任务面板样式 | ~6KB |
 | src/assets/styles/dialogue-modal.css | 对话样式 | ~5.8KB |
+| src/assets/styles/inventory-modal.css | 道具面板样式 | ~5.5KB |
 
-**总计代码量**：约 170KB JavaScript/CSS + 4.8KB HTML
+**总计代码量**：约 185KB JavaScript/CSS + 4.8KB HTML
 
 ---
 
@@ -407,17 +457,16 @@ TaositStory/
 - 完成任务后自动激活下一个
 - 在任务面板查看进度
 
-### 交互弹窗
-- 查看对象详情
-- 了解可能的影响
-- 点击动作按钮执行交互
-- ESC或点击背景关闭
-
-### 任务系统
-- 任务自动追踪进度
-- 完成任务后自动激活下一个
-- 在任务面板查看进度
+### 道具系统
+- 点击底部"🎒 道具"按钮打开背包面板
+- 按 **I** 键快速打开背包
+- 道具分类筛选（全部/工具/消耗品/文件/钥匙/装备/书籍）
+- 点击道具查看详情
+- 点击"使用"按钮使用道具
+- 点击"组合"按钮将相容道具组合
+- 点击"丢弃"按钮移除道具（需确认）
+- 场景切换时检查任务/道具前置条件
 
 ---
 
-**下一阶段目标**：实现对话UI、道具使用系统、第二章数据。
+**下一阶段目标**：第二章数据、音频系统、测试优化。

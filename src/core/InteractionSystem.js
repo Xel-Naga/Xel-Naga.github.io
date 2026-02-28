@@ -329,20 +329,37 @@ export class InteractionSystem {
   handleMove(exitData, action) {
     // exitData 可以是目标位置ID或exit对象
     const targetLocation = typeof exitData === 'string' ? exitData : exitData.target;
-    
+
+    // 检查任务依赖（如果有 gameEngine）
+    if (this.gameEngine) {
+      const canMove = this.gameEngine.canMoveTo(targetLocation);
+      if (!canMove.success) {
+        // 发送反馈消息
+        this.eventSystem.emit('feedback:show', {
+          message: canMove.message,
+          type: 'danger',
+        });
+        return {
+          success: false,
+          reason: canMove.reason,
+          message: canMove.message,
+        };
+      }
+    }
+
     // 检查exit是否有触发条件
     if (typeof exitData === 'object') {
       // 触发事件
       if (exitData.triggerEvent) {
         this.eventSystem.emit('event:trigger', { eventId: exitData.triggerEvent });
       }
-      
+
       // 章节结束
       if (exitData.triggerChapterEnd) {
         this.eventSystem.emit('chapter:complete', { chapter: 1 });
       }
     }
-    
+
     // 移动到新位置
     this.state.moveTo(targetLocation);
 
