@@ -420,10 +420,11 @@ export class GameState {
     const currentTime = this.get('world.time');
     const currentDate = this.get('world.date');
     
+    let newYear = currentDate.year;
     let newHour = currentTime.hour + advanceHours;
     let newDay = currentDate.day;
     let newMonth = currentDate.month;
-    let newYear = currentDate.year;
+    const year = 2025;
     
     // 处理日期进位
     if (newHour >= 24) {
@@ -437,9 +438,6 @@ export class GameState {
         newMonth++;
         if (newMonth > 12) {
           newMonth = 1;
-          newYear++;
-          // 更新农历年份
-          this.set('world.lunarYear', this.calculateLunarYear(newYear));
         }
       }
     }

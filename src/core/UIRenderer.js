@@ -458,7 +458,7 @@ export class UIRenderer {
     // 更新日期显示（年月日 + 农历）
     const dateEl = document.getElementById('env-date');
     if (dateEl && world.date) {
-      const dateStr = `${world.date.year}年${world.date.month}月${world.date.day}日`;
+      const dateStr = `${world.date.month}月${world.date.day}日`;
       const lunarStr = world.lunarYear || '';
       dateEl.querySelector('.env-value').textContent = `${dateStr} ${lunarStr}`;
     }
