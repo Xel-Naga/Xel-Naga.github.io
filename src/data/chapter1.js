@@ -397,7 +397,7 @@ const chapter1Data = {
     plank_road: {
       id: 'plank_road',
       name: '悬崖栈道',
-      description: `木制栈道钉在悬崖侧面，宽约一米，外侧有简陋护栏。木板老旧，很多已经腐朽。<span class="highlight highlight-examine" data-id="plank_inscription" data-type="examine">栈道入口的石碑</span>上刻着警告。木板在脚下发出"嘎吱—嘎吱—"的呻吟声——和林墨梦中的声音一模一样。`,
+      description: `木制栈道钉在悬崖侧面，宽约一米，外侧有简陋护栏。木板老旧，很多已经腐朽。<span class="highlight highlight-examine" data-id="plank_inscription" data-type="examine">栈道入口的石碑</span>上刻着警告。你注意到<span class="highlight highlight-examine" data-id="plank_structure" data-type="examine">栈道结构</span>的承重部分似乎有异常。木板在脚下发出"嘎吱—嘎吱—"的呻吟声——和林墨梦中的声音一模一样。`,
       ambience: '木板呻吟声、风声、心跳声',
 
       // 场景描述变体
@@ -407,7 +407,7 @@ const chapter1Data = {
           conditions: {
             hasClue: 'clue_plank_mechanism',
           },
-          description: `木制栈道钉在悬崖侧面，宽约一米，外侧有简陋护栏。<span class="highlight highlight-examine" data-id="plank_inscription" data-type="examine">栈道入口的石碑</span>上刻着警告。<span class="highlight highlight-danger" data-id="plank_mechanism" data-type="puzzle">栈道机关</span>的部分支撑点似乎可以按顺序操作。木板在脚下发出"嘎吱—嘎吱—"的呻吟声。`,
+          description: `木制栈道钉在悬崖侧面，宽约一米，外侧有简陋护栏。<span class="highlight highlight-examine" data-id="plank_inscription" data-type="examine">栈道入口的石碑</span>上刻着警告。<span class="highlight highlight-examine" data-id="plank_structure" data-type="examine">栈道结构</span>的部分支撑点<span class="highlight highlight-danger" data-id="plank_mechanism" data-type="puzzle">栈道机关</span>似乎可以按顺序操作。木板在脚下发出"嘎吱—嘎吱—"的呻吟声。`,
         },
       ],
 
