@@ -82,14 +82,14 @@ export class InteractionSystem {
     // 记录检查次数
     const eventKey = `examine_${elementId}`;
     const count = this.state.recordEvent(eventKey);
-    
+
     // 记录已检查
     this.state.recordExamined(elementId);
-    
+
     // 获取交互元素数据
     const sceneData = this.getCurrentSceneData();
     const interactive = sceneData?.interactives?.find(i => i.id === elementId);
-    
+
     if (!interactive) {
       return { success: false, reason: 'not_found' };
     }
@@ -98,7 +98,7 @@ export class InteractionSystem {
     if (interactive.effects) {
       this.applyEffects(interactive.effects);
     }
-    
+
     // 获取描述（支持重复描述变体）
     let message;
     if (interactive.repeatDescriptions) {
@@ -106,18 +106,23 @@ export class InteractionSystem {
     } else {
       message = interactive.description || '你仔细检查了这里。';
     }
-    
-    // 第一次检查 - 可能有额外发现
+
+    // 第一次检查 - 可能有额外发现，但不自动添加线索/道具
+    // 用户需要手动点击"拾取"或"记录"来获得
     if (count === 1) {
       if (interactive.firstExamineBonus) {
         message += ' ' + interactive.firstExamineBonus;
       }
-      // 添加线索
+      // 不再自动添加线索，提示用户可以记录
       if (interactive.clueId) {
-        this.state.addClue(interactive.clueId);
+        message += ' 你发现了重要的线索，可以点击"记录线索"保存到笔记。';
+      }
+      // 不再自动添加物品，提示用户可以拾取
+      if (interactive.itemId) {
+        message += ' 你发现了物品，可以点击"拾取物品"放入背包。';
       }
     }
-    
+
     // 多次检查 - 理智低时可能产生幻觉
     if (count >= 4) {
       const sanity = this.state.get('status.sanity.current');
@@ -127,11 +132,16 @@ export class InteractionSystem {
       }
     }
 
+    // 返回检查结果，包含线索/物品信息供UI显示
     return {
       success: true,
       type: 'examine',
       message: message,
       count: count,
+      hasClue: !!interactive.clueId,
+      clueId: interactive.clueId,
+      hasItem: !!interactive.itemId,
+      itemId: interactive.itemId,
     };
   }
 

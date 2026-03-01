@@ -175,7 +175,7 @@ export class InteractionModal {
    */
   buildActionButtons(interactive, elementId) {
     const buttons = [];
-    
+
     switch (interactive.type) {
       case 'examine':
         buttons.push(`<button class="action-btn-primary" data-action="examine" data-id="${elementId}">🔍 详细检查</button>`);
@@ -185,7 +185,9 @@ export class InteractionModal {
         if (hasItem) {
           buttons.push(`<button class="action-btn-disabled" disabled>✓ 已获得</button>`);
         } else {
-          buttons.push(`<button class="action-btn-primary" data-action="collect" data-id="${elementId}">📦 收集物品</button>`);
+          // First show examine button, then pickup button will appear after viewing
+          buttons.push(`<button class="action-btn-primary" data-action="examine_item" data-id="${elementId}">🔍 查看物品</button>`);
+          buttons.push(`<button class="action-btn-success" data-action="pickup" data-id="${elementId}">✋ 拾取物品</button>`);
         }
         break;
       case 'clue':
@@ -193,7 +195,9 @@ export class InteractionModal {
         if (hasClue) {
           buttons.push(`<button class="action-btn-disabled" disabled>✓ 已记录</button>`);
         } else {
-          buttons.push(`<button class="action-btn-primary" data-action="clue" data-id="${elementId}">📝 记录线索</button>`);
+          // First show examine button, then record button will appear after viewing
+          buttons.push(`<button class="action-btn-primary" data-action="examine_clue" data-id="${elementId}">🔍 查看线索</button>`);
+          buttons.push(`<button class="action-btn-success" data-action="record" data-id="${elementId}">📝 记录线索</button>`);
         }
         break;
       case 'danger':
@@ -248,11 +252,56 @@ export class InteractionModal {
         const action = e.currentTarget.dataset.action;
         const id = e.currentTarget.dataset.id;
         console.log(`点击动作按钮: action=${action}, id=${id}`);
-        
-        // 先执行交互
+
+        // 对于拾取和记录操作，直接添加到背包/笔记
+        if (action === 'pickup') {
+          // 调用收集处理
+          const result = this.gameEngine.interactionSystem.handle(id, 'collect');
+          console.log(`拾取结果:`, result);
+          if (result.success) {
+            this.eventSystem.emit('interaction:completed', {
+              elementId: id,
+              action: 'collect',
+              result: result,
+            });
+            // 显示拾取成功结果
+            this.showPickupResult(result, interactive, id);
+          }
+          return;
+        }
+
+        if (action === 'record') {
+          // 调用线索处理
+          const result = this.gameEngine.interactionSystem.handle(id, 'clue');
+          console.log(`记录结果:`, result);
+          if (result.success) {
+            this.eventSystem.emit('interaction:completed', {
+              elementId: id,
+              action: 'clue',
+              result: result,
+            });
+            // 显示记录成功结果
+            this.showRecordResult(result, interactive, id);
+          }
+          return;
+        }
+
+        // 查看物品/线索 - 显示详情但不添加
+        if (action === 'examine_item' || action === 'examine_clue') {
+          // 显示查看结果
+          const result = {
+            success: true,
+            message: interactive.description || '你查看了这个物品。',
+            type: action === 'examine_item' ? 'examine_item' : 'examine_clue',
+          };
+          this.showExamineResult(result, interactive, id);
+          return;
+        }
+
+        // 其他操作（检查、设备、谜题等）保持原有逻辑
         const result = this.gameEngine.handleInteraction(id, action);
         console.log(`交互结果:`, result);
-        
+
         // 触发事件
         if (result.success) {
           this.eventSystem.emit('interaction:completed', {
@@ -260,7 +309,7 @@ export class InteractionModal {
             action: action,
             result: result,
           });
-          
+
           // 对于检查和设备操作，在弹窗内显示结果
           if (action === 'examine' || action === 'device') {
             this.showResult(result, interactive, id);
@@ -273,7 +322,7 @@ export class InteractionModal {
             return;
           }
         }
-        
+
         // 其他情况直接关闭弹窗
         this.close();
       });
@@ -362,6 +411,143 @@ export class InteractionModal {
     
     // 绑定关闭按钮
     const closeBtn = body.querySelector('#result-close-btn');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => this.close());
+    }
+  }
+
+  /**
+   * 显示查看物品结果（不拾取）
+   * @param {Object} result - 交互结果
+   * @param {Object} interactive - 交互对象数据
+   * @param {string} elementId - 元素ID
+   */
+  showExamineResult(result, interactive, elementId) {
+    if (!this.modal) return;
+
+    const body = this.modal.querySelector('.modal-body');
+    if (!body) return;
+
+    const item = interactive.itemId ? this.gameEngine.getItemData(interactive.itemId) : null;
+    const clue = interactive.clueId ? this.gameEngine.getClueData(interactive.clueId) : null;
+
+    let resultHTML = `
+      <div class="result-section">
+        <div class="result-header">
+          <span class="result-icon">👁️</span>
+          <span class="result-title">${result.type === 'examine_item' ? '物品详情' : '线索详情'}</span>
+        </div>
+        <div class="result-message">${result.message || '你查看了详情。'}</div>
+      </div>
+    `;
+
+    if (item) {
+      resultHTML += `
+        <div class="result-item">
+          <div class="result-item-name">${item.name || interactive.name}</div>
+          <div class="result-item-desc">${item.description || ''}</div>
+        </div>
+      `;
+    }
+
+    if (clue) {
+      resultHTML += `
+        <div class="result-clue">
+          <div class="result-clue-title">💡 线索提示</div>
+          <div class="result-clue-name">${clue.name || '未知线索'}</div>
+        </div>
+      `;
+    }
+
+    // 更新弹窗内容 - 显示拾取/记录按钮
+    body.innerHTML = resultHTML + `
+      <div class="actions-section">
+        <button class="action-btn-primary" id="result-back-btn">返回</button>
+      </div>
+    `;
+
+    // 绑定返回按钮 - 重新显示动作按钮
+    const backBtn = body.querySelector('#result-back-btn');
+    if (backBtn) {
+      backBtn.addEventListener('click', () => {
+        // 重新创建弹窗
+        this.createModal(interactive, elementId);
+        this.bindEvents(interactive, elementId);
+      });
+    }
+  }
+
+  /**
+   * 显示拾取结果
+   * @param {Object} result - 交互结果
+   * @param {Object} interactive - 交互对象数据
+   * @param {string} elementId - 元素ID
+   */
+  showPickupResult(result, interactive, elementId) {
+    if (!this.modal) return;
+
+    const body = this.modal.querySelector('.modal-body');
+    if (!body) return;
+
+    const resultHTML = `
+      <div class="result-section success">
+        <div class="result-header">
+          <span class="result-icon">✓</span>
+          <span class="result-title">物品已拾取</span>
+        </div>
+        <div class="result-message">${result.message || '你获得了物品。'}</div>
+      </div>
+    `;
+
+    // 更新弹窗内容
+    body.innerHTML = resultHTML + `
+      <div class="actions-section">
+        <button class="action-btn-primary" id="pickup-close-btn">关闭</button>
+      </div>
+    `;
+
+    // 绑定关闭按钮
+    const closeBtn = body.querySelector('#pickup-close-btn');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => this.close());
+    }
+  }
+
+  /**
+   * 显示记录结果
+   * @param {Object} result - 交互结果
+   * @param {Object} interactive - 交互对象数据
+   * @param {string} elementId - 元素ID
+   */
+  showRecordResult(result, interactive, elementId) {
+    if (!this.modal) return;
+
+    const body = this.modal.querySelector('.modal-body');
+    if (!body) return;
+
+    const resultHTML = `
+      <div class="result-section success">
+        <div class="result-header">
+          <span class="result-icon">✓</span>
+          <span class="result-title">线索已记录</span>
+        </div>
+        <div class="result-message">${result.message || '线索已记录到笔记。'}</div>
+      </div>
+      <div class="result-clue">
+        <div class="result-clue-title">🔍 已记录线索</div>
+        <div class="result-clue-name">${result.clueName || interactive.name}</div>
+      </div>
+    `;
+
+    // 更新弹窗内容
+    body.innerHTML = resultHTML + `
+      <div class="actions-section">
+        <button class="action-btn-primary" id="record-close-btn">关闭</button>
+      </div>
+    `;
+
+    // 绑定关闭按钮
+    const closeBtn = body.querySelector('#record-close-btn');
     if (closeBtn) {
       closeBtn.addEventListener('click', () => this.close());
     }

@@ -138,7 +138,7 @@ const chapter1Data = {
       ],
       exits: [
         { direction: 'back', target: 'dorm', name: '返回宿舍' },
-        { direction: 'next', target: 'train_station', name: '前往火车站' },
+        { direction: 'next', target: 'train_station', name: '前往火车站', requireQuest: 'quest_preparation', requireQuestText: '需要完成"启程准备"任务' },
       ],
     },
 
@@ -194,7 +194,7 @@ const chapter1Data = {
       ],
       exits: [
         { direction: 'back', target: 'subway', name: '返回地铁站' },
-        { direction: 'next', target: 'bus', name: '上车出发', triggerEvent: 'event_board_train' },
+        { direction: 'next', target: 'bus', name: '上车出发', triggerEvent: 'event_board_train', requireQuest: 'quest_preparation', requireQuestText: '需要完成"启程准备"任务' },
       ],
       events: {
         event_screen_glitch: {
@@ -277,7 +277,7 @@ const chapter1Data = {
         },
       ],
       exits: [
-        { direction: 'next', target: 'mountain_road', name: '乘车进山' },
+        { direction: 'next', target: 'mountain_road', name: '乘车进山', requireQuest: 'quest_journey', requireQuestText: '需要完成"风雪之路"任务第二步（与陈青山会合）' },
       ],
       onEnter: {
         addItems: ['item_geological_hammer', 'item_compass', 'item_old_map', 'item_mozi_book'],
@@ -347,7 +347,7 @@ const chapter1Data = {
         },
       ],
       exits: [
-        { direction: 'next', target: 'hiking', name: '徒步进山' },
+        { direction: 'next', target: 'hiking', name: '徒步进山', requireQuest: 'quest_journey', requireQuestText: '需要完成"风雪之路"任务第三步（通过滑坡路段）' },
       ],
       onEnter: {
         effects: { temperature: -5, stamina: -5 },
@@ -386,7 +386,7 @@ const chapter1Data = {
         },
       ],
       exits: [
-        { direction: 'next', target: 'plank_road', name: '继续攀爬' },
+        { direction: 'next', target: 'plank_road', name: '继续攀爬', requireQuest: 'quest_journey', requireQuestText: '需要完成"风雪之路"任务第三步（通过滑坡路段）' },
       ],
       onEnter: {
         effects: { stamina: -15, temperature: -3 },
@@ -449,7 +449,7 @@ const chapter1Data = {
         },
       ],
       exits: [
-        { direction: 'next', target: 'stone_pavilion', name: '小心通过' },
+        { direction: 'next', target: 'stone_pavilion', name: '小心通过', requireQuest: 'quest_journey', requireQuestText: '需要完成"风雪之路"任务（穿越悬崖栈道）' },
       ],
       onEnter: {
         effects: { sanity: -10, stamina: -5 },
@@ -539,7 +539,7 @@ const chapter1Data = {
         },
       ],
       exits: [
-        { direction: 'next', target: 'gate', name: '走向道观', triggerChapterEnd: true },
+        { direction: 'next', target: 'gate', name: '走向道观', triggerChapterEnd: true, requireQuest: 'quest_arrival', requireQuestText: '需要完成"道观初现"任务（在山脊看到道观）' },
       ],
       onEnter: {
         effects: { stamina: -10, temperature: -2 },
@@ -631,7 +631,7 @@ const chapter1Data = {
         },
       ],
       exits: [
-        { direction: 'enter', target: 'courtyard', name: '进入道观', locked: false },
+        { direction: 'enter', target: 'courtyard', name: '进入道观', locked: false, requireQuest: 'quest_arrival', requireQuestText: '需要完成"道观初现"任务（调查山门石狮）' },
       ],
 
       // 触发分支点
@@ -662,7 +662,7 @@ const chapter1Data = {
       ],
       exits: [
         { direction: 'back', target: 'gate', name: '返回山门' },
-        { direction: 'enter', target: 'main_hall', name: '进入三清殿' },
+        { direction: 'enter', target: 'main_hall', name: '进入三清殿', requireQuest: 'quest_arrival', requireQuestText: '需要完成"道观初现"任务' },
       ],
     },
 
