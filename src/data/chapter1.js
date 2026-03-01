@@ -277,7 +277,7 @@ const chapter1Data = {
         },
       ],
       exits: [
-        { direction: 'next', target: 'mountain_road', name: '乘车进山', requireQuest: 'quest_journey', requireQuestText: '需要完成"风雪之路"任务第二步（与陈青山会合）' },
+        { direction: 'next', target: 'mountain_road', name: '乘车进山' },
       ],
       onEnter: {
         addItems: ['item_geological_hammer', 'item_compass', 'item_old_map', 'item_mozi_book'],
@@ -670,6 +670,7 @@ const chapter1Data = {
     main_hall: {
       id: 'main_hall',
       name: '三清殿',
+      dangerous: true,
       description: `殿内昏暗，香火缭绕。正中供奉三清像，金漆剥落。<span class="highlight highlight-npc" data-id="mingxin" data-type="npc">一位年轻道士</span>正在打扫。殿角放着一口<span class="highlight highlight-danger" data-id="ancient_bell" data-type="danger">古钟</span>。`,
       ambience: '香火燃烧声、钟鸣',
       interactives: [
@@ -1568,6 +1569,109 @@ const chapter1Data = {
       effects: {
         setFlag: 'ending_trapped_achieved',
       },
+    },
+  ],
+
+  // ========== 随机事件配置 ==========
+  randomEvents: [
+    {
+      id: 'event_strange_sound',
+      title: '异响',
+      description: '你听到墙壁后传来奇怪的声响...',
+      message: '墙壁后传来轻微的敲击声，像是某种机关被触发。',
+      eventType: 'warning',
+      locations: ['main_hall', 'scripture_library', 'dark_passage'],
+      once: true,
+      conditions: { sanity: 50 },
+      options: [
+        {
+          id: 'investigate_sound',
+          text: '仔细调查声音来源',
+          requirements: { attributes: { intuition: 30 } },
+          effects: { status: { stamina: -10, intuition: 5 } },
+          resultMessage: '你发现了一道隐藏的暗门！',
+          success: true,
+        },
+        {
+          id: 'ignore_sound',
+          text: '不予理睬',
+          effects: { status: { sanity: -5 } },
+          resultMessage: '你选择忽略这个声音，但它始终萦绕在心头...',
+        },
+        {
+          id: 'call_companion',
+          text: '叫苏晓雨一起查看',
+          requirements: { flag: 'su_xiaoyu_joined' },
+          effects: { status: { sanity: 5 } },
+          resultMessage: '两人一起调查，发现了一些可疑的痕迹。',
+          success: true,
+        },
+      ],
+      timeoutEffects: { status: { sanity: -10 } },
+      timeoutMessage: '你犹豫不决，那声音渐渐消失了...',
+    },
+    {
+      id: 'event_shadow_appearance',
+      title: '影子',
+      description: '你注意到一个奇怪的身影...',
+      message: '一个不属于这里的身影闪过，让你心头一紧。',
+      eventType: 'supernatural',
+      locations: ['courtyard', 'main_hall', 'temple_view'],
+      once: true,
+      conditions: { sanity: 60 },
+      options: [
+        {
+          id: 'chase_shadow',
+          text: '追赶那个身影',
+          requirements: { attributes: { stamina: 40 } },
+          effects: { status: { stamina: -20, sanity: -10 } },
+          resultMessage: '你追到了一个空荡荡的角落，什么都没有...',
+        },
+        {
+          id: 'observe_shadow',
+          text: '暗中观察',
+          effects: { status: { sanity: -5, intuition: 10 } },
+          resultMessage: '你观察到更多细节，那身影似乎在引导你前往某个地方。',
+          success: true,
+        },
+        {
+          id: 'retreat',
+          text: '迅速离开',
+          effects: { status: { sanity: 5 } },
+          resultMessage: '你选择离开，保持距离是最安全的。',
+        },
+      ],
+      timeoutEffects: { status: { sanity: -15 } },
+      timeoutMessage: '你太过犹豫，那身影已经消失了...',
+    },
+    {
+      id: 'event_found_item',
+      title: '意外发现',
+      description: '你在地上发现了什么...',
+      message: '角落里有东西在微光中闪烁。',
+      eventType: 'normal',
+      locations: ['main_hall', 'scripture_library', 'courtyard'],
+      once: false,
+      conditions: { flag: 'has_light_source' },
+      options: [
+        {
+          id: 'pickup_item',
+          text: '捡起物品',
+          addItems: ['item_old_key'],
+          effects: { status: { intuition: 5 } },
+          resultMessage: '你发现了一把古老的钥匙！',
+          success: true,
+        },
+        {
+          id: 'examine_first',
+          text: '先仔细查看',
+          effects: { status: { intuition: 10 } },
+          resultMessage: '你发现这是一把刻有符文的钥匙，似乎有特殊用途。',
+          success: true,
+        },
+      ],
+      timeoutEffects: {},
+      timeoutMessage: '你决定不去管它...',
     },
   ],
 };

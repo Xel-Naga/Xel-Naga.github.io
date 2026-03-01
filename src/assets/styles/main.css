@@ -297,7 +297,6 @@ body {
   border-radius: 2px;
   transition: all var(--transition-fast);
   position: relative;
-  border-bottom: 1px dashed currentColor;
 }
 
 .highlight:hover {
@@ -313,18 +312,21 @@ body {
 .highlight-examine {
   color: var(--color-examine);
   text-shadow: 0 0 10px rgba(91, 141, 184, 0.3);
+  filter: drop-shadow(0 0 3px rgba(91, 141, 184, 0.5));
 }
 
 /* 绿色 - 可收集 */
 .highlight-collect {
   color: var(--color-collect);
   text-shadow: 0 0 10px rgba(91, 139, 91, 0.3);
+  filter: drop-shadow(0 0 3px rgba(91, 139, 91, 0.5));
 }
 
 /* 黄色 - 线索 */
 .highlight-clue {
   color: var(--color-clue);
   text-shadow: 0 0 10px rgba(184, 168, 91, 0.3);
+  filter: drop-shadow(0 0 3px rgba(184, 168, 91, 0.5));
   font-weight: 600;
 }
 
@@ -332,6 +334,7 @@ body {
 .highlight-danger {
   color: var(--color-danger);
   text-shadow: 0 0 10px rgba(184, 91, 91, 0.4);
+  filter: drop-shadow(0 0 3px rgba(184, 91, 91, 0.5));
   animation: dangerPulse 3s ease-in-out infinite;
 }
 
@@ -344,6 +347,7 @@ body {
 .highlight-npc {
   color: var(--color-npc);
   text-shadow: 0 0 10px rgba(139, 91, 184, 0.3);
+  filter: drop-shadow(0 0 3px rgba(139, 91, 184, 0.5));
   font-weight: 600;
 }
 
@@ -351,6 +355,7 @@ body {
 .highlight-device {
   color: var(--color-device);
   text-shadow: 0 0 10px rgba(184, 125, 91, 0.3);
+  filter: drop-shadow(0 0 3px rgba(184, 125, 91, 0.5));
 }
 
 /* ===== 交互反馈区域 ===== */

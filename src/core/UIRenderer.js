@@ -7,6 +7,8 @@ import { InteractionModal } from '../components/InteractionModal.js';
 import { QuestPanel } from '../components/QuestPanel.js';
 import { DialogueModal } from '../components/DialogueModal.js';
 import { InventoryModal } from '../components/InventoryModal.js';
+import { DecisionModal } from '../components/DecisionModal.js';
+import { ItemSelectorModal } from '../components/ItemSelectorModal.js';
 
 export class UIRenderer {
   constructor(engine, eventSystem) {
@@ -33,6 +35,8 @@ export class UIRenderer {
     this.questPanel = new QuestPanel(this.eventSystem, this.engine);
     this.dialogueModal = new DialogueModal(this.eventSystem, this.engine);
     this.inventoryModal = new InventoryModal(this.eventSystem, this.engine);
+    this.decisionModal = new DecisionModal(this.eventSystem, this);
+    this.itemSelectorModal = new ItemSelectorModal(this.eventSystem, this.engine);
     
     // 绑定UI事件
     this.bindEvents();
@@ -164,6 +168,18 @@ export class UIRenderer {
 
     // 任务完成 - 刷新场景以更新出口状态
     this.eventSystem.on('quest:completed', () => {
+      const sceneData = this.engine.getCurrentScene();
+      this.renderScene(sceneData);
+    });
+
+    // 交互完成 - 刷新场景（动态叙事）
+    this.eventSystem.on('interaction:completed', () => {
+      const sceneData = this.engine.getCurrentScene();
+      this.renderScene(sceneData);
+    });
+
+    // 场景刷新事件（由DecisionSystem触发）
+    this.eventSystem.on('scene:refresh', (data) => {
       const sceneData = this.engine.getCurrentScene();
       this.renderScene(sceneData);
     });
@@ -724,20 +740,234 @@ export class UIRenderer {
   showMapModal() {
     const visited = this.engine.state.get('world.visitedLocations') || [];
     const current = this.engine.state.get('player.location');
+    const chapterData = this.engine.currentChapter;
 
-    let content = '<div style="padding: 20px;">';
-    content += '<p style="color: var(--color-bone-white-dark); margin-bottom: 15px;">已探索区域:</p>';
-    content += '<ul style="list-style: none; padding: 0;">';
-    
-    visited.forEach(loc => {
-      const isCurrent = loc === current;
-      content += `<li style="padding: 8px; ${isCurrent ? 'background: rgba(139, 58, 58, 0.2); border-left: 3px solid var(--color-faded-red);' : ''}">${loc} ${isCurrent ? '(当前)' : ''}</li>`;
-    });
-    
-    content += '</ul>';
+    // 场景名称映射（英文ID -> 中文名称）
+    const sceneNames = this.getSceneNames();
+
+    let content = '<div class="map-container">';
+
+    // 地图关系图
+    content += '<div class="map-visual">';
+    content += this.renderMapVisual(visited, current, sceneNames);
     content += '</div>';
 
-    this.showModal('地图', content);
+    // 已访问列表
+    content += '<div class="map-list">';
+    content += '<h3 style="color: var(--color-bone-white); margin-bottom: 10px; font-size: 1em;">📍 已探索区域</h3>';
+
+    if (visited.length === 0) {
+      content += '<p style="color: var(--color-bone-white-dark);">尚未探索任何区域</p>';
+    } else {
+      content += '<ul style="list-style: none; padding: 0; margin: 0;">';
+
+      visited.forEach(loc => {
+        const isCurrent = loc === current;
+        const sceneName = sceneNames[loc] || loc;
+        content += `
+          <li class="map-location-item ${isCurrent ? 'current' : ''}" data-location="${loc}">
+            <span class="location-icon">${isCurrent ? '📍' : '⭕'}</span>
+            <span class="location-name">${sceneName}</span>
+            ${isCurrent ? '<span class="current-badge">(当前)</span>' : ''}
+          </li>`;
+      });
+
+      content += '</ul>';
+    }
+    content += '</div>';
+    content += '</div>';
+
+    // 添加样式
+    this.addMapStyles();
+
+    this.showModal('🗺️ 地图', content);
+  }
+
+  /**
+   * 获取场景名称映射
+   */
+  getSceneNames() {
+    const sceneNames = {};
+    const scenes = this.engine.sceneManager?.scenes;
+    if (scenes) {
+      scenes.forEach((scene, id) => {
+        sceneNames[id] = scene.name || id;
+      });
+    }
+    return sceneNames;
+  }
+
+  /**
+   * 渲染地图可视化
+   */
+  renderMapVisual(visited, current, sceneNames) {
+    // 简单的关系图
+    const mapData = this.getMapStructure();
+
+    let html = '<div class="map-connections">';
+
+    // 渲染主要路线
+    mapData.locations.forEach(loc => {
+      const isVisited = visited.includes(loc.id);
+      const isCurrent = loc.id === current;
+      const isUnlocked = isVisited || loc.connections?.some(c => visited.includes(c));
+
+      html += `
+        <div class="map-node ${isVisited ? 'visited' : ''} ${isCurrent ? 'current' : ''} ${!isUnlocked ? 'locked' : ''}"
+             style="left: ${loc.x}%; top: ${loc.y}%;">
+          <div class="node-icon">${isCurrent ? '📍' : (isVisited ? '✓' : '?')}</div>
+          <div class="node-name">${sceneNames[loc.id] || loc.id}</div>
+        </div>
+      `;
+
+      // 渲染连接线
+      loc.connections?.forEach(connId => {
+        const conn = mapData.locations.find(l => l.id === connId);
+        if (conn && (visited.includes(loc.id) || visited.includes(connId))) {
+          html += `
+            <div class="map-line" style="
+              left: ${Math.min(loc.x, conn.x)}%;
+              top: ${Math.min(loc.y, conn.y)}%;
+              width: ${Math.abs(conn.x - loc.x)}%;
+              height: ${Math.abs(conn.y - loc.y)}%;
+            "></div>
+          `;
+        }
+      });
+    });
+
+    html += '</div>';
+    return html;
+  }
+
+  /**
+   * 获取地图结构
+   */
+  getMapStructure() {
+    return {
+      locations: [
+        { id: 'dorm', x: 10, y: 50, connections: ['subway'] },
+        { id: 'subway', x: 30, y: 50, connections: ['dorm', 'train_station'] },
+        { id: 'train_station', x: 50, y: 50, connections: ['subway', 'bus'] },
+        { id: 'bus', x: 70, y: 50, connections: ['train_station', 'gate'] },
+        { id: 'gate', x: 85, y: 30, connections: ['bus', 'courtyard'] },
+        { id: 'courtyard', x: 70, y: 30, connections: ['gate', 'main_hall', 'temple_view'] },
+        { id: 'main_hall', x: 60, y: 20, connections: ['courtyard', 'scripture_library'] },
+        { id: 'temple_view', x: 85, y: 15, connections: ['courtyard'] },
+        { id: 'scripture_library', x: 50, y: 15, connections: ['main_hall'] },
+      ],
+    };
+  }
+
+  /**
+   * 添加地图样式
+   */
+  addMapStyles() {
+    // 检查是否已添加
+    if (document.getElementById('map-styles')) return;
+
+    const style = document.createElement('style');
+    style.id = 'map-styles';
+    style.textContent = `
+      .map-container {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      .map-visual {
+        position: relative;
+        height: 200px;
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      .map-connections {
+        position: relative;
+        width: 100%;
+        height: 100%;
+      }
+      .map-line {
+        position: absolute;
+        background: rgba(255, 255, 255, 0.2);
+        transform-origin: left top;
+      }
+      .map-node {
+        position: absolute;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        z-index: 1;
+      }
+      .map-node .node-icon {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.1);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        margin: 0 auto 5px;
+      }
+      .map-node.visited .node-icon {
+        background: rgba(91, 139, 91, 0.3);
+        border-color: var(--color-collect);
+      }
+      .map-node.current .node-icon {
+        background: rgba(139, 58, 58, 0.4);
+        border-color: var(--color-faded-red);
+        animation: pulse 1.5s infinite;
+      }
+      .map-node.locked .node-icon {
+        opacity: 0.5;
+      }
+      .map-node .node-name {
+        font-size: 10px;
+        color: var(--color-bone-white-dark);
+        white-space: nowrap;
+      }
+      .map-node.current .node-name {
+        color: var(--color-faded-red);
+        font-weight: bold;
+      }
+      .map-list {
+        background: rgba(0, 0, 0, 0.2);
+        padding: 15px;
+        border-radius: 8px;
+      }
+      .map-location-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        margin-bottom: 5px;
+        border-radius: 4px;
+        transition: all 0.2s;
+      }
+      .map-location-item:hover {
+        background: rgba(255, 255, 255, 0.05);
+      }
+      .map-location-item.current {
+        background: rgba(139, 58, 58, 0.2);
+        border-left: 3px solid var(--color-faded-red);
+      }
+      .map-location-item .location-icon {
+        font-size: 14px;
+      }
+      .map-location-item .location-name {
+        flex: 1;
+        color: var(--color-bone-white);
+      }
+      .map-location-item .current-badge {
+        color: var(--color-faded-red);
+        font-size: 12px;
+      }
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+      }
+    `;
+    document.head.appendChild(style);
   }
 
   /**

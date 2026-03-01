@@ -9,6 +9,7 @@ import { InteractionSystem } from './InteractionSystem.js';
 import { DynamicNarrativeSystem } from './DynamicNarrativeSystem.js';
 import { PuzzleSystem } from './PuzzleSystem.js';
 import { BranchSystem } from './BranchSystem.js';
+import { DecisionSystem } from './DecisionSystem.js';
 import chapter1Data from '../data/chapter1.js';
 
 export class GameEngine {
@@ -20,6 +21,7 @@ export class GameEngine {
     this.narrativeSystem = null;
     this.puzzleSystem = null;
     this.branchSystem = null;
+    this.decisionSystem = null;
     this.currentChapter = null;
   }
 
@@ -47,6 +49,9 @@ export class GameEngine {
 
     // 初始化分支系统
     this.branchSystem = new BranchSystem(this.state, this.eventSystem);
+
+    // 初始化决策系统
+    this.decisionSystem = new DecisionSystem(this.state, this.eventSystem, this);
 
     // 绑定事件监听
     this.bindEvents();
@@ -274,6 +279,11 @@ export class GameEngine {
 
     // 注册章节分支
     this.registerChapterBranches();
+
+    // 初始化决策系统（随机事件）
+    if (this.currentChapter?.randomEvents) {
+      this.decisionSystem.init(this.currentChapter.randomEvents);
+    }
 
     // 激活初始任务
     this.activateInitialQuests();
