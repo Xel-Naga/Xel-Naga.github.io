@@ -93,7 +93,7 @@ const chapter1Data = {
         },
       ],
       exits: [
-        { direction: 'next', target: 'subway', name: '前往地铁站', trigger: '整理完装备后' },
+        { direction: 'next', target: 'subway', name: '前往地铁站' },
       ],
       onEnter: {
         initStatus: {
@@ -1164,9 +1164,9 @@ const chapter1Data = {
       description: '整理装备，准备前往悬云山',
       type: 'main',
       steps: [
-        { id: 'step1', description: '检查宿舍物品', completed: false },
+        { id: 'step1', description: '检查宿舍物品', completed: false, trigger: 'interaction:textbook' },
         { id: 'step2', description: '整理登山包', completed: false, trigger: 'interaction:backpack' },
-        { id: 'step3', description: '与苏晓雨会合', completed: false, trigger: 'location:subway' },
+        { id: 'step3', description: '与苏晓雨会合', completed: false, trigger: 'interaction:su_xiaoyu' },
       ],
       rewards: {
         items: ['item_level', 'item_notebook', 'item_keychain', 'item_tape_measure'],

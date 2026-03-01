@@ -107,20 +107,12 @@ export class InteractionSystem {
       message = interactive.description || '你仔细检查了这里。';
     }
 
-    // 第一次检查 - 可能有额外发现，但不自动添加线索/道具
-    // 用户需要手动点击"拾取"或"记录"来获得
+    // 第一次检查 - 可能有额外发现
     if (count === 1) {
       if (interactive.firstExamineBonus) {
         message += ' ' + interactive.firstExamineBonus;
       }
-      // 不再自动添加线索，提示用户可以记录
-      if (interactive.clueId) {
-        message += ' 你发现了重要的线索，可以点击"记录线索"保存到笔记。';
-      }
-      // 不再自动添加物品，提示用户可以拾取
-      if (interactive.itemId) {
-        message += ' 你发现了物品，可以点击"拾取物品"放入背包。';
-      }
+      // 注意：线索/物品提示不在检查描述中显示，只在弹窗中显示
     }
 
     // 多次检查 - 理智低时可能产生幻觉

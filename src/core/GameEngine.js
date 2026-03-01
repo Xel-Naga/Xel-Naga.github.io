@@ -159,15 +159,18 @@ export class GameEngine {
    */
   checkQuestProgress(triggerType, triggerId) {
     const activeQuests = this.state.get('quests.active') || [];
-    
+    const completedQuests = this.state.get('quests.completed') || [];
+    console.log(`checkQuestProgress: type=${triggerType}, id=${triggerId}, active=${activeQuests}, completed=${completedQuests}`);
+
     activeQuests.forEach(questId => {
       const quest = this.currentChapter?.quests?.find(q => q.id === questId);
       if (!quest || !quest.steps) return;
-      
+
       quest.steps.forEach(step => {
         if (step.trigger && !step.completed) {
           // 检查是否匹配触发条件
           const [type, id] = step.trigger.split(':');
+          console.log(`检查步骤: ${step.id}, trigger=${step.trigger}, type=${type}, id=${id}, 匹配=${type === triggerType && id === triggerId}`);
           if (type === triggerType && id === triggerId) {
             // 更新任务进度
             this.state.updateQuestProgress(questId, step.id);
@@ -196,11 +199,16 @@ export class GameEngine {
    */
   completeQuest(questId) {
     const quest = this.currentChapter?.quests?.find(q => q.id === questId);
-    if (!quest) return;
-    
+    if (!quest) {
+      console.log(`completeQuest: 任务未找到 ${questId}`);
+      return;
+    }
+
+    console.log(`completeQuest: 完成任务 ${questId}`);
     // 完成任务
     this.state.completeQuest(questId);
-    
+    console.log(`completeQuest: 完成后 quests.completed = ${this.state.get('quests.completed')}`);
+
     // 发放奖励
     if (quest.rewards) {
       if (quest.rewards.items) {
@@ -209,7 +217,10 @@ export class GameEngine {
         });
       }
     }
-    
+
+    // 触发任务完成事件（用于刷新UI）
+    this.eventSystem.emit('quest:completed', { questId });
+
     // 激活下一个主线任务
     if (quest.type === 'main') {
       this.activateNextQuest(quest);
@@ -386,18 +397,21 @@ export class GameEngine {
    */
   handleLocationChange(data) {
     console.log(`位置变化: ${data.from} -> ${data.to}`);
-    
+
     // 场景管理器加载新场景
     const sceneData = this.sceneManager.loadScene(data.to);
-    
+
+    // 添加中文名称到事件数据中
+    data.toName = sceneData?.name || data.to;
+
     // 触发场景显示事件
     this.eventSystem.emit('scene:updated', sceneData);
-    
+
     // 触发场景切换事件（用于清理对话历史等）
-    this.eventSystem.emit('scene:changed', { 
-      scene: sceneData, 
-      from: data.from, 
-      to: data.to 
+    this.eventSystem.emit('scene:changed', {
+      scene: sceneData,
+      from: data.from,
+      to: data.to
     });
   }
 
@@ -749,12 +763,17 @@ export class GameEngine {
     // 添加道具
     if (effects.addItem) {
       this.state.addItem(effects.addItem);
-      this.eventSystem.emit('item:acquired', { itemId: effects.addItem });
+      const itemData = this.getItemData(effects.addItem);
+      const itemName = itemData?.name || effects.addItem;
+      this.eventSystem.emit('item:acquired', { itemId: effects.addItem, itemName });
     }
 
     // 添加线索
     if (effects.addClue) {
       this.state.addClue(effects.addClue);
+      const clueData = this.getClueData(effects.addClue);
+      const clueName = clueData?.name || effects.addClue;
+      this.eventSystem.emit('clue:discovered', { clueId: effects.addClue, clueName });
     }
 
     // 设置标志

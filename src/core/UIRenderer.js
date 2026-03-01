@@ -78,7 +78,7 @@ export class UIRenderer {
   bindEvents() {
     // 动作按钮
     this.elements.actionButtons.forEach(btn => {
-      btn.addEventListener('click', (e) => {
+      btn.addEventListener('click', () => {
         const action = btn.dataset.action;
         this.handleActionButton(action);
       });
@@ -129,12 +129,16 @@ export class UIRenderer {
 
     // 道具获取
     this.eventSystem.on('item:acquired', (data) => {
-      this.addFeedback(`获得道具: ${data.itemId}`, 'success');
+      // 优先使用传入的中文名称，否则从数据中获取
+      const itemName = data.itemName || this.engine.getItemData(data.itemId)?.name || data.itemId;
+      this.addFeedback(`获得道具: ${itemName}`, 'success');
     });
 
     // 线索发现
     this.eventSystem.on('clue:discovered', (data) => {
-      this.addFeedback(`发现线索: ${data.clueId}`, 'clue');
+      // 优先使用传入的中文名称，否则从数据中获取
+      const clueName = data.clueName || this.engine.getClueData(data.clueId)?.name || data.clueId;
+      this.addFeedback(`发现线索: ${clueName}`, 'clue');
       // 刷新场景（可能触发新的场景变体）
       setTimeout(() => {
         const sceneData = this.engine.getCurrentScene();
@@ -144,14 +148,8 @@ export class UIRenderer {
 
     // 位置变化
     this.eventSystem.on('location:changed', (data) => {
-      this.addFeedback(`移动到: ${data.to}`, 'move');
-    });
-
-    // 交互完成
-    this.eventSystem.on('interaction:completed', (data) => {
-      if (data.result && data.result.message) {
-        this.addFeedback(data.result.message, data.result.type);
-      }
+      const locationName = data.toName || data.to;
+      this.addFeedback(`移动到: ${locationName}`, 'move');
     });
 
     // 对话开始
@@ -162,6 +160,12 @@ export class UIRenderer {
       } else {
         console.warn('dialogueModal未初始化');
       }
+    });
+
+    // 任务完成 - 刷新场景以更新出口状态
+    this.eventSystem.on('quest:completed', () => {
+      const sceneData = this.engine.getCurrentScene();
+      this.renderScene(sceneData);
     });
   }
 
@@ -358,11 +362,8 @@ export class UIRenderer {
    * 执行移动
    */
   executeMove(exitData) {
-    const result = this.engine.handleInteraction(exitData, 'move');
-    
-    if (result.success) {
-      this.addFeedback(`前往: ${result.target}`, 'move');
-    }
+    // 移动反馈由 location:changed 事件统一处理
+    this.engine.handleInteraction(exitData, 'move');
   }
 
   /**
@@ -422,7 +423,12 @@ export class UIRenderer {
           // 查找对应的 exit 对象
           this.handleHighlightClick(exit, 'move');
         } else if (exit?.locked) {
-          this.addFeedback(`无法前往: ${exit.lockReason || '道路被封锁'}`, 'danger');
+          // 任务条件不满足时，显示神秘氛围提示
+          if (exit.requireQuest) {
+            this.addFeedback('冥冥中似有什么不祥，你还不能离开...', 'danger');
+          } else {
+            this.addFeedback(`无法前往: ${exit.lockReason || '道路被封锁'}`, 'danger');
+          }
         }
       });
     });
@@ -574,7 +580,7 @@ export class UIRenderer {
   }
 
   /**
-   * 添加反馈信息
+   * 添加反馈信息（Toast提示条）
    * @param {string} message - 消息内容
    * @param {string} type - 消息类型
    */
@@ -582,31 +588,35 @@ export class UIRenderer {
     if (!this.elements.feedbackLog) return;
 
     const item = document.createElement('div');
-    item.className = 'feedback-item';
+    item.className = `feedback-item ${type}`;
     item.textContent = message;
 
-    // 根据类型设置样式
-    const colors = {
-      'success': '#5B8B5B',
-      'clue': '#B8A85B',
-      'danger': '#B85B5B',
-      'status': '#8B5BB8',
-      'move': '#5B8DB8',
-    };
-    
-    if (colors[type]) {
-      item.style.borderLeftColor = colors[type];
+    // 获取现有提示条数量
+    const existingItems = this.elements.feedbackLog.querySelectorAll('.feedback-item');
+    const maxToasts = 5;
+
+    // 如果已有太多提示条，移除最老的
+    if (existingItems.length >= maxToasts) {
+      const oldest = existingItems[0];
+      if (oldest && oldest.parentNode) {
+        oldest.parentNode.removeChild(oldest);
+      }
     }
 
     this.elements.feedbackLog.appendChild(item);
 
-    // 自动滚动到底部
-    this.elements.feedbackLog.scrollTop = this.elements.feedbackLog.scrollHeight;
-
-    // 限制反馈数量
-    while (this.elements.feedbackLog.children.length > 20) {
-      this.elements.feedbackLog.removeChild(this.elements.feedbackLog.firstChild);
-    }
+    // 5秒后自动消失
+    setTimeout(() => {
+      if (item.parentNode) {
+        item.classList.add('toast-out');
+        // 动画结束后移除元素
+        setTimeout(() => {
+          if (item.parentNode) {
+            item.parentNode.removeChild(item);
+          }
+        }, 500);
+      }
+    }, 5000);
   }
 
   /**

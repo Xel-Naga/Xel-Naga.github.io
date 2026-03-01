@@ -493,7 +493,7 @@ export class GameState {
     
     // 场景变化时推进时间（2-4小时）
     this.advanceTime();
-    
+
     this.eventSystem.emit('location:changed', {
       from: oldLocation,
       to: locationId,

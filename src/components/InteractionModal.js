@@ -80,7 +80,6 @@ export class InteractionModal {
             ${this.buildItemSection(interactive.itemId)}
             
             <div class="actions-section">
-              <div class="actions-label">可执行动作:</div>
               <div class="actions-list">
                 ${actionButtons}
               </div>
@@ -370,45 +369,192 @@ export class InteractionModal {
    */
   showResult(result, interactive, elementId) {
     if (!this.modal) return;
-    
+
     const body = this.modal.querySelector('.modal-body');
     if (!body) return;
-    
-    // 获取已检查次数（用于examine类型）
-    const examineCount = result.count || this.gameEngine.state.getEventCount(`examine_${elementId}`);
-    const examinedBadge = examineCount > 0 ? `<span class="examined-badge">已检查 ${examineCount} 次</span>` : '';
-    
-    // 构建结果内容
-    let resultHTML = `
-      <div class="result-section">
-        <div class="result-header">
-          <span class="result-icon">✓</span>
-          <span class="result-title">检查完成</span>
-          ${examinedBadge}
-        </div>
-        <div class="result-message">${result.message || '你完成了检查。'}</div>
-      </div>
-    `;
-    
-    // 如果有线索获得，显示线索信息
-    if (result.clueId || interactive.clueId) {
+
+    // 预先检查线索和物品状态
+    const hasClue = result.hasClue || interactive.clueId;
+    const hasItem = result.hasItem || interactive.itemId;
+    let hasClueRecorded = false;
+    let hasItemCollected = false;
+    let clueDataForRecord = null;
+
+    let resultHTML = '';
+    let actionButtons = '';
+
+    // 情况1：只有线索（没有物品）
+    if (hasClue && !hasItem) {
       const clueId = result.clueId || interactive.clueId;
-      const clue = this.gameEngine.getClueData?.(clueId);
-      resultHTML += `
-        <div class="result-clue">
-          <div class="result-clue-title">🔍 发现线索</div>
-          <div class="result-clue-name">${clue ? clue.name : '未知线索'}</div>
+      hasClueRecorded = this.gameEngine.state.get('player.clues').includes(clueId);
+      clueDataForRecord = this.gameEngine.getClueData(clueId);
+
+      if (hasClueRecorded) {
+        // 已记录线索，直接显示关闭
+        resultHTML = `
+          <div class="result-hint obtained">
+            <span class="hint-icon">✓</span>
+            <span class="hint-text">线索已记录</span>
+          </div>
+        `;
+        actionButtons = '<button class="action-btn-primary" id="result-close-btn">关闭</button>';
+      } else if (clueDataForRecord) {
+        // 未记录线索，显示内容和记录按钮（不显示关闭）
+        resultHTML = `
+          <div class="result-clue">
+            <div class="result-clue-title">💡 发现线索</div>
+            <div class="result-clue-name">${clueDataForRecord.name}</div>
+            <div class="result-clue-desc">${clueDataForRecord.description || ''}</div>
+          </div>
+        `;
+        actionButtons = '<button class="action-btn-success" id="result-record-btn">📝 记录线索</button>';
+      }
+    }
+    // 情况2：只有物品（没有线索）
+    else if (hasItem && !hasClue) {
+      const itemId = result.itemId || interactive.itemId;
+      hasItemCollected = this.gameEngine.state.get('player.inventory').includes(itemId);
+
+      if (hasItemCollected) {
+        resultHTML = `
+          <div class="result-hint obtained">
+            <span class="hint-icon">✓</span>
+            <span class="hint-text">物品已拾取</span>
+          </div>
+        `;
+        actionButtons = '<button class="action-btn-primary" id="result-close-btn">关闭</button>';
+      } else {
+        resultHTML = `
+          <div class="result-hint">
+            <span class="hint-icon">📦</span>
+            <span class="hint-text">发现物品！</span>
+          </div>
+        `;
+        actionButtons = '<button class="action-btn-success" id="result-pickup-btn">✋ 拾取物品</button><button class="action-btn-primary" id="result-close-btn">关闭</button>';
+      }
+    }
+    // 情况3：既有线索又有物品
+    else if (hasClue && hasItem) {
+      // 处理线索
+      const clueId = result.clueId || interactive.clueId;
+      hasClueRecorded = this.gameEngine.state.get('player.clues').includes(clueId);
+      clueDataForRecord = this.gameEngine.getClueData(clueId);
+
+      if (hasClueRecorded) {
+        resultHTML += `
+          <div class="result-hint obtained">
+            <span class="hint-icon">✓</span>
+            <span class="hint-text">线索已记录</span>
+          </div>
+        `;
+      } else if (clueDataForRecord) {
+        resultHTML += `
+          <div class="result-clue">
+            <div class="result-clue-title">💡 发现线索</div>
+            <div class="result-clue-name">${clueDataForRecord.name}</div>
+            <div class="result-clue-desc">${clueDataForRecord.description || ''}</div>
+          </div>
+        `;
+      }
+
+      // 处理物品
+      const itemId = result.itemId || interactive.itemId;
+      hasItemCollected = this.gameEngine.state.get('player.inventory').includes(itemId);
+
+      if (hasItemCollected) {
+        resultHTML += `
+          <div class="result-hint obtained">
+            <span class="hint-icon">✓</span>
+            <span class="hint-text">物品已拾取</span>
+          </div>
+        `;
+      } else {
+        resultHTML += `
+          <div class="result-hint">
+            <span class="hint-icon">📦</span>
+            <span class="hint-text">发现物品！</span>
+          </div>
+        `;
+      }
+
+      // 构建按钮
+      const recordBtn = (!hasClueRecorded) ? '<button class="action-btn-success" id="result-record-btn">📝 记录线索</button>' : '';
+      const pickupBtn = (!hasItemCollected) ? '<button class="action-btn-success" id="result-pickup-btn">✋ 拾取物品</button>' : '';
+      const closeBtn = (hasClueRecorded && hasItemCollected) ? '<button class="action-btn-primary" id="result-close-btn">关闭</button>' : '';
+      actionButtons = recordBtn + pickupBtn + closeBtn;
+    }
+    // 情况4：没有线索也没有物品（纯examine类型）
+    else {
+      const examineCount = result.count || this.gameEngine.state.getEventCount(`examine_${elementId}`);
+      const examinedBadge = examineCount > 0 ? `<span class="examined-badge">已检查 ${examineCount} 次</span>` : '';
+      resultHTML = `
+        <div class="result-section">
+          <div class="result-header">
+            <span class="result-icon">✓</span>
+            <span class="result-title">检查完成</span>
+            ${examinedBadge}
+          </div>
+          <div class="result-message">${result.message || '你完成了检查。'}</div>
         </div>
       `;
+      actionButtons = '<button class="action-btn-primary" id="result-close-btn">关闭</button>';
     }
-    
+
     // 更新弹窗内容
     body.innerHTML = resultHTML + `
       <div class="actions-section">
-        <button class="action-btn-primary" id="result-close-btn">关闭</button>
+        ${actionButtons}
       </div>
     `;
-    
+
+    // 绑定记录按钮 - 记录后关闭弹窗并显示提示条
+    const recordBtn = body.querySelector('#result-record-btn');
+    if (recordBtn) {
+      recordBtn.addEventListener('click', () => {
+        const clueId = result.clueId || interactive.clueId;
+        const clueName = clueDataForRecord?.name || '未知线索';
+        const r = this.gameEngine.interactionSystem.handle(elementId, 'clue');
+        if (r.success) {
+          this.eventSystem.emit('interaction:completed', {
+            elementId: elementId,
+            action: 'clue',
+            result: r,
+          });
+          // 关闭弹窗
+          this.close();
+          // 显示提示条
+          this.eventSystem.emit('feedback:show', {
+            message: `已记录线索：${clueName}`,
+            type: 'clue',
+          });
+        }
+      });
+    }
+
+    // 绑定拾取按钮 - 拾取后关闭弹窗并显示提示条
+    const pickupBtn = body.querySelector('#result-pickup-btn');
+    if (pickupBtn) {
+      pickupBtn.addEventListener('click', () => {
+        const itemData = interactive.itemId ? this.gameEngine.getItemData(interactive.itemId) : null;
+        const itemName = itemData?.name || interactive.name || '物品';
+        const r = this.gameEngine.interactionSystem.handle(elementId, 'collect');
+        if (r.success) {
+          this.eventSystem.emit('interaction:completed', {
+            elementId: elementId,
+            action: 'collect',
+            result: r,
+          });
+          // 关闭弹窗
+          this.close();
+          // 显示提示条
+          this.eventSystem.emit('feedback:show', {
+            message: `已拾取物品：${itemName}`,
+            type: 'success',
+          });
+        }
+      });
+    }
+
     // 绑定关闭按钮
     const closeBtn = body.querySelector('#result-close-btn');
     if (closeBtn) {

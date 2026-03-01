@@ -228,6 +228,13 @@ export class DialogueModal {
     // 添加线索
     if (dialogue.clueId) {
       this.gameEngine.state.addClue(dialogue.clueId);
+      // 显示线索发现反馈
+      const clueData = this.gameEngine.getClueData(dialogue.clueId);
+      const clueName = clueData?.name || dialogue.clueId;
+      this.eventSystem.emit('feedback:show', {
+        message: `已记录线索：${clueName}`,
+        type: 'clue',
+      });
     }
 
     // 添加道具
@@ -309,6 +316,9 @@ export class DialogueModal {
    * 关闭弹窗
    */
   close() {
+    // 保存当前NPC ID用于事件触发
+    const finishedNPCId = this.currentNPC?.id;
+
     if (this.modal) {
       const modalToClose = this.modal; // 保存当前modal引用
       modalToClose.classList.remove('show');
@@ -332,6 +342,14 @@ export class DialogueModal {
     // 关闭时保存当前NPC的对话历史
     if (this.currentNPC && this.dialogueHistory.length > 0) {
       this.npcDialogueHistory.set(this.currentNPC.id, this.dialogueHistory);
+    }
+
+    // 触发交互完成事件（用于任务检查）
+    if (finishedNPCId) {
+      this.eventSystem.emit('interaction:completed', {
+        elementId: finishedNPCId,
+        action: 'npc',
+      });
     }
 
     this.currentNPC = null;

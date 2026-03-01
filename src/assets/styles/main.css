@@ -364,26 +364,75 @@ body {
 }
 
 .feedback-log {
-  font-size: 0.85rem;
-  color: var(--color-bone-white-dark);
+  position: fixed;
+  top: 100px;
+  right: 20px;
+  z-index: 1000;
+  max-width: 320px;
+  pointer-events: none;
 }
 
 .feedback-item {
-  padding: 5px 0;
-  border-left: 2px solid var(--color-faded-red-dark);
-  padding-left: 10px;
-  margin-bottom: 5px;
-  animation: fadeInLeft 0.3s ease;
+  padding: 12px 16px;
+  margin-bottom: 8px;
+  background: rgba(20, 20, 25, 0.92);
+  border-radius: 6px;
+  color: var(--color-bone-white);
+  font-size: 0.9rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+  animation: toastIn 0.4s ease;
+  border-left: 3px solid var(--color-faded-red-dark);
 }
 
-@keyframes fadeInLeft {
+.feedback-item.success {
+  border-left-color: #5B8B5B;
+  background: rgba(40, 60, 40, 0.92);
+}
+
+.feedback-item.clue {
+  border-left-color: #B8A85B;
+  background: rgba(60, 55, 35, 0.92);
+}
+
+.feedback-item.danger {
+  border-left-color: #B85B5B;
+  background: rgba(60, 35, 35, 0.92);
+}
+
+.feedback-item.status {
+  border-left-color: #8B5BB8;
+  background: rgba(45, 35, 60, 0.92);
+}
+
+.feedback-item.move {
+  border-left-color: #5B8DB8;
+  background: rgba(35, 50, 60, 0.92);
+}
+
+.feedback-item.toast-out {
+  animation: toastOut 0.5s ease forwards;
+}
+
+@keyframes toastIn {
   from {
     opacity: 0;
-    transform: translateX(-10px);
+    transform: translateX(30px);
   }
   to {
     opacity: 1;
     transform: translateX(0);
+  }
+}
+
+@keyframes toastOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(30px);
   }
 }
 

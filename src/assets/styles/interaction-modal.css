@@ -223,6 +223,10 @@
   margin-top: 20px;
   padding-top: 15px;
   border-top: 1px dashed var(--color-faded-red-dark);
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .actions-label {
@@ -362,6 +366,35 @@
   line-height: 1.6;
 }
 
+.result-hint {
+  background: rgba(91, 168, 91, 0.1);
+  border: 1px solid rgba(91, 168, 91, 0.3);
+  border-radius: 4px;
+  padding: 12px 15px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.result-hint.obtained {
+  background: rgba(100, 100, 100, 0.1);
+  border-color: rgba(100, 100, 100, 0.3);
+}
+
+.result-hint.obtained .hint-text {
+  color: var(--color-bone-white-dark);
+}
+
+.result-hint .hint-icon {
+  font-size: 1.1rem;
+}
+
+.result-hint .hint-text {
+  font-size: 0.9rem;
+  color: var(--color-collect);
+}
+
 .result-clue {
   background: rgba(184, 168, 91, 0.1);
   border: 1px solid rgba(184, 168, 91, 0.3);
@@ -380,6 +413,16 @@
   font-size: 1rem;
   color: var(--color-bone-white);
   font-weight: bold;
+}
+
+.result-clue-desc {
+  font-size: 0.9rem;
+  color: var(--color-bone-white-dark);
+  line-height: 1.6;
+  margin-top: 8px;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
 }
 
 /* 响应式适配 */

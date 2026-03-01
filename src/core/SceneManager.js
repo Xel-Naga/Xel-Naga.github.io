@@ -335,13 +335,14 @@ export class SceneManager {
   processExits(exits) {
     return exits.map(exit => {
       const processed = { ...exit };
-      
+
       // 检查是否需要任务条件
       if (exit.requireQuest) {
         const completedQuests = this.state.get('quests.completed') || [];
+        console.log(`processExits: 检查出口 ${exit.target}, requireQuest=${exit.requireQuest}, completedQuests=${completedQuests}`);
         const questProgress = this.state.getQuestProgress(exit.requireQuest);
         const quest = this.chapterData?.quests?.find(q => q.id === exit.requireQuest);
-        
+
         // 检查任务是否完成
         if (!completedQuests.includes(exit.requireQuest)) {
           processed.locked = true;
