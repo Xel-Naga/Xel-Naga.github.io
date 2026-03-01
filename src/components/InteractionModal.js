@@ -205,6 +205,17 @@ export class InteractionModal {
       case 'device':
         buttons.push(`<button class="action-btn-primary" data-action="device" data-id="${elementId}">🔧 操作设备</button>`);
         break;
+      case 'puzzle':
+        // 检查谜题状态
+        const puzzleState = this.gameEngine.state.getPuzzleState(interactive.puzzleId);
+        if (puzzleState.state === 'solved') {
+          buttons.push(`<button class="action-btn-disabled" disabled>✓ 已解开</button>`);
+        } else if (puzzleState.state === 'failed') {
+          buttons.push(`<button class="action-btn-primary" data-action="puzzle" data-id="${elementId}">🔐 尝试解谜</button>`);
+        } else {
+          buttons.push(`<button class="action-btn-primary" data-action="puzzle" data-id="${elementId}">🔐 尝试解谜</button>`);
+        }
+        break;
     }
     
     return buttons.join('');
@@ -253,6 +264,12 @@ export class InteractionModal {
           // 对于检查和设备操作，在弹窗内显示结果
           if (action === 'examine' || action === 'device') {
             this.showResult(result, interactive, id);
+            return;
+          }
+
+          // 对于谜题，显示解谜输入界面
+          if (action === 'puzzle') {
+            this.showPuzzleInterface(result, interactive, id);
             return;
           }
         }
@@ -347,6 +364,194 @@ export class InteractionModal {
     const closeBtn = body.querySelector('#result-close-btn');
     if (closeBtn) {
       closeBtn.addEventListener('click', () => this.close());
+    }
+  }
+
+  /**
+   * 显示解谜输入界面
+   * @param {Object} result - 交互结果
+   * @param {Object} interactive - 交互数据
+   * @param {string} elementId - 元素ID
+   */
+  showPuzzleInterface(result, interactive, elementId) {
+    if (!this.modal) return;
+
+    const body = this.modal.querySelector('.modal-body');
+    if (!body) return;
+
+    // 获取谜题数据
+    const puzzleId = result.puzzleId;
+    const puzzleType = result.puzzleType;
+    const hint = result.hint || '请尝试解开这个谜题';
+    const maxAttempts = result.maxAttempts || 3;
+    const puzzleState = this.gameEngine.state.getPuzzleState(puzzleId);
+    const attempts = puzzleState.attempts || 0;
+    const remaining = maxAttempts - attempts;
+
+    // 构建输入界面
+    let inputHTML = '';
+
+    if (puzzleType === 'password') {
+      inputHTML = `
+        <div class="puzzle-input-section">
+          <div class="puzzle-hint">${hint}</div>
+          <input type="text" id="puzzle-answer" class="puzzle-input" placeholder="请输入答案..." autocomplete="off">
+          <button id="puzzle-submit" class="action-btn-primary">提交答案</button>
+        </div>
+      `;
+    } else if (puzzleType === 'sequence') {
+      inputHTML = `
+        <div class="puzzle-input-section">
+          <div class="puzzle-hint">${hint}</div>
+          <div class="puzzle-sequence-buttons">
+            <button class="sequence-btn" data-value="1">1</button>
+            <button class="sequence-btn" data-value="2">2</button>
+            <button class="sequence-btn" data-value="3">3</button>
+            <button class="sequence-btn" data-value="4">4</button>
+            <button class="sequence-btn" data-value="5">5</button>
+          </div>
+          <div class="sequence-display" id="sequence-display"></div>
+          <button id="puzzle-submit" class="action-btn-primary">确认顺序</button>
+        </div>
+      `;
+    } else if (puzzleType === 'placement') {
+      inputHTML = `
+        <div class="puzzle-input-section">
+          <div class="puzzle-hint">${hint}</div>
+          <p>请从背包中选择物品放置到正确位置</p>
+          <button id="select-item-btn" class="action-btn-primary">选择物品</button>
+        </div>
+      `;
+    } else {
+      // 默认密码输入
+      inputHTML = `
+        <div class="puzzle-input-section">
+          <div class="puzzle-hint">${hint}</div>
+          <input type="text" id="puzzle-answer" class="puzzle-input" placeholder="请输入答案..." autocomplete="off">
+          <button id="puzzle-submit" class="action-btn-primary">提交答案</button>
+        </div>
+      `;
+    }
+
+    const puzzleHTML = `
+      <div class="puzzle-section">
+        <div class="puzzle-header">
+          <span class="puzzle-icon">🔐</span>
+          <span class="puzzle-title">解谜挑战</span>
+          <span class="puzzle-attempts">剩余尝试: ${remaining}</span>
+        </div>
+        ${inputHTML}
+        <div class="puzzle-message" id="puzzle-message"></div>
+      </div>
+    `;
+
+    // 更新弹窗内容
+    body.innerHTML = puzzleHTML;
+
+    // 绑定提交按钮
+    const submitBtn = body.querySelector('#puzzle-submit');
+    if (submitBtn) {
+      submitBtn.addEventListener('click', () => {
+        this.submitPuzzleAnswer(puzzleId, puzzleType, elementId);
+      });
+    }
+
+    // 绑定顺序按钮
+    const sequenceBtns = body.querySelectorAll('.sequence-btn');
+    if (sequenceBtns.length > 0) {
+      const sequence = [];
+      sequenceBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const value = e.target.dataset.value;
+          sequence.push(value);
+          const display = body.querySelector('#sequence-display');
+          if (display) {
+            display.textContent = sequence.join(' → ');
+          }
+          // 存储当前顺序
+          body.dataset.sequence = JSON.stringify(sequence);
+        });
+      });
+    }
+
+    // 绑定输入框回车
+    const input = body.querySelector('#puzzle-answer');
+    if (input) {
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          this.submitPuzzleAnswer(puzzleId, puzzleType, elementId);
+        }
+      });
+    }
+  }
+
+  /**
+   * 提交谜题答案
+   * @param {string} puzzleId - 谜题ID
+   * @param {string} puzzleType - 谜题类型
+   * @param {string} elementId - 元素ID
+   */
+  submitPuzzleAnswer(puzzleId, puzzleType, elementId) {
+    const body = this.modal?.querySelector('.modal-body');
+    let attempt = null;
+
+    if (puzzleType === 'sequence') {
+      const sequenceStr = body?.dataset.sequence || '[]';
+      attempt = JSON.parse(sequenceStr);
+    } else {
+      const input = body?.querySelector('#puzzle-answer');
+      attempt = input?.value?.trim() || '';
+    }
+
+    if (!attempt || (Array.isArray(attempt) && attempt.length === 0)) {
+      const messageEl = body?.querySelector('#puzzle-message');
+      if (messageEl) {
+        messageEl.textContent = '请输入答案';
+        messageEl.className = 'puzzle-message error';
+      }
+      return;
+    }
+
+    // 调用游戏引擎尝试解谜
+    const result = this.gameEngine.trySolvePuzzle(puzzleId, attempt);
+
+    const messageEl = body?.querySelector('#puzzle-message');
+    if (messageEl) {
+      if (result.success) {
+        messageEl.textContent = result.message;
+        messageEl.className = 'puzzle-message success';
+
+        // 解谜成功，延迟关闭并显示奖励
+        setTimeout(() => {
+          this.close();
+          // 显示反馈
+          if (result.effects) {
+            this.eventSystem.emit('feedback:show', {
+              message: '谜题已解开！',
+              type: 'success'
+            });
+          }
+        }, 1500);
+      } else {
+        messageEl.textContent = result.message;
+        messageEl.className = result.remainingAttempts !== undefined ? 'puzzle-message warning' : 'puzzle-message error';
+
+        // 如果还有次数，刷新界面
+        if (result.remainingAttempts !== undefined) {
+          setTimeout(() => {
+            // 重新显示解谜界面
+            const puzzleResult = this.gameEngine.handleInteraction(elementId, 'puzzle');
+            if (puzzleResult.success) {
+              this.showPuzzleInterface(puzzleResult, {}, elementId);
+            }
+          }, 1500);
+        } else {
+          // 失败，关闭弹窗
+          setTimeout(() => {
+            this.close();
+          }, 1500);
+        }
+      }
     }
   }
 

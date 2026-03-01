@@ -72,39 +72,145 @@ export class SceneManager {
   generateDescription(scene) {
     // 基础描述
     let description = scene.description || '';
-    
+
     // 获取当前状态
     const sanity = this.state.get('status.sanity.current');
     const temperature = this.state.get('status.temperature.current');
     const time = this.state.get('world.time.hour');
     const visited = this.state.get('world.visitedLocations') || [];
     const isFirstVisit = !visited.includes(scene.id);
-    
-    // 时间变体
-    if (scene.variants?.time) {
-      const timeVariant = this.getTimeVariant(scene.variants.time, time);
-      if (timeVariant) {
-        description = timeVariant.description || description;
+
+    // 处理数组形式的场景变体（带条件）
+    if (Array.isArray(scene.variants)) {
+      const matchingVariant = this.findMatchingVariant(scene.variants);
+      if (matchingVariant) {
+        description = matchingVariant.description || description;
+      }
+    } else {
+      // 原有逻辑：时间变体
+      if (scene.variants?.time) {
+        const timeVariant = this.getTimeVariant(scene.variants.time, time);
+        if (timeVariant) {
+          description = timeVariant.description || description;
+        }
+      }
+
+      // 理智状态变体
+      if (scene.variants?.sanity) {
+        const sanityVariant = this.getSanityVariant(scene.variants.sanity, sanity);
+        if (sanityVariant) {
+          description = this.mergeDescription(description, sanityVariant.addition);
+        }
+      }
+
+      // 重复访问变体
+      if (!isFirstVisit && scene.variants?.revisit) {
+        description = this.mergeDescription(description, scene.variants.revisit.addition);
       }
     }
-    
-    // 理智状态变体
-    if (scene.variants?.sanity) {
-      const sanityVariant = this.getSanityVariant(scene.variants.sanity, sanity);
-      if (sanityVariant) {
-        description = this.mergeDescription(description, sanityVariant.addition);
-      }
-    }
-    
-    // 重复访问变体
-    if (!isFirstVisit && scene.variants?.revisit) {
-      description = this.mergeDescription(description, scene.variants.revisit.addition);
-    }
-    
+
     // 状态修饰（温度、理智等）
     description = this.applyStatusModifiers(description);
-    
+
     return description;
+  }
+
+  /**
+   * 查找匹配的场景变体
+   * @param {Array} variants - 变体数组
+   * @returns {Object|null} 匹配的变体
+   */
+  findMatchingVariant(variants) {
+    let bestMatch = null;
+    let bestPriority = -1;
+
+    for (const variant of variants) {
+      if (this.checkVariantConditions(variant.conditions)) {
+        if (!bestMatch || (variant.priority || 0) > bestPriority) {
+          bestMatch = variant;
+          bestPriority = variant.priority || 0;
+        }
+      }
+    }
+
+    return bestMatch;
+  }
+
+  /**
+   * 检查变体条件
+   * @param {Object} conditions - 条件对象
+   * @returns {boolean} 是否匹配
+   */
+  checkVariantConditions(conditions) {
+    if (!conditions) return true;
+
+    // 时间段条件
+    if (conditions.timePhases) {
+      const currentPhase = this.state.get('world.time.timePhase');
+      if (!conditions.timePhases.includes(currentPhase)) {
+        return false;
+      }
+    }
+
+    // 天气条件
+    if (conditions.weathers) {
+      const currentWeather = this.state.get('world.weather');
+      if (!conditions.weathers.includes(currentWeather)) {
+        return false;
+      }
+    }
+
+    // 理智条件
+    if (conditions.sanity) {
+      const sanity = this.state.get('status.sanity.current');
+      if (conditions.sanity.min !== undefined && sanity < conditions.sanity.min) {
+        return false;
+      }
+      if (conditions.sanity.max !== undefined && sanity > conditions.sanity.max) {
+        return false;
+      }
+    }
+
+    // 线索条件
+    if (conditions.hasClue) {
+      if (!this.state.hasClue(conditions.hasClue)) {
+        return false;
+      }
+    }
+
+    // 标志条件（支持 '!' 前缀表示取反）
+    if (conditions.flags) {
+      for (const flag of conditions.flags) {
+        const isNegated = flag.startsWith('!');
+        const flagName = isNegated ? flag.slice(1) : flag;
+        const hasFlag = this.state.get(`world.flags.${flagName}`);
+        if (isNegated ? hasFlag : !hasFlag) {
+          return false;
+        }
+      }
+    }
+
+    // 任务条件
+    if (conditions.questCompleted) {
+      if (!this.state.isQuestCompleted(conditions.questCompleted)) {
+        return false;
+      }
+    }
+
+    if (conditions.questActive) {
+      if (!this.state.isQuestActive(conditions.questActive)) {
+        return false;
+      }
+    }
+
+    // 道具条件
+    if (conditions.hasItem) {
+      if (!this.state.hasItem(conditions.hasItem)) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   /**
@@ -172,27 +278,39 @@ export class SceneManager {
    * @returns {Array} 处理后的交互元素
    */
   processInteractives(interactives) {
-    return interactives.map(item => {
-      const processed = { ...item };
-      
-      // 获取检查次数（即使没有检查过也获取，用于显示首次描述）
-      const examineCount = this.state.getEventCount(`examine_${item.id}`);
-      
-      // 检查是否已检查过
-      if (item.id && this.state.hasExamined(item.id)) {
-        processed.examined = true;
-      }
-      
-      // 应用重复检查的描述（根据检查次数动态调整）
-      if (item.repeatDescriptions) {
-        const repeatDesc = this.getRepeatDescription(item.repeatDescriptions, examineCount);
-        if (repeatDesc) {
-          processed.description = repeatDesc;
+    return interactives
+      .filter(item => this.checkItemConditions(item.conditions))
+      .map(item => {
+        const processed = { ...item };
+
+        // 获取检查次数（即使没有检查过也获取，用于显示首次描述）
+        const examineCount = this.state.getEventCount(`examine_${item.id}`);
+
+        // 检查是否已检查过
+        if (item.id && this.state.hasExamined(item.id)) {
+          processed.examined = true;
         }
-      }
-      
-      return processed;
-    });
+
+        // 应用重复检查的描述（根据检查次数动态调整）
+        if (item.repeatDescriptions) {
+          const repeatDesc = this.getRepeatDescription(item.repeatDescriptions, examineCount);
+          if (repeatDesc) {
+            processed.description = repeatDesc;
+          }
+        }
+
+        return processed;
+      });
+  }
+
+  /**
+   * 检查交互元素的条件
+   * @param {Object} conditions - 条件对象
+   * @returns {boolean} 是否满足条件
+   */
+  checkItemConditions(conditions) {
+    if (!conditions) return true;
+    return this.checkVariantConditions(conditions);
   }
 
   /**

@@ -399,6 +399,18 @@ const chapter1Data = {
       name: '悬崖栈道',
       description: `木制栈道钉在悬崖侧面，宽约一米，外侧有简陋护栏。木板老旧，很多已经腐朽。<span class="highlight highlight-examine" data-id="plank_inscription" data-type="examine">栈道入口的石碑</span>上刻着警告。木板在脚下发出"嘎吱—嘎吱—"的呻吟声——和林墨梦中的声音一模一样。`,
       ambience: '木板呻吟声、风声、心跳声',
+
+      // 场景描述变体
+      variants: [
+        {
+          priority: 15,
+          conditions: {
+            hasClue: 'clue_plank_mechanism',
+          },
+          description: `木制栈道钉在悬崖侧面，宽约一米，外侧有简陋护栏。<span class="highlight highlight-examine" data-id="plank_inscription" data-type="examine">栈道入口的石碑</span>上刻着警告。<span class="highlight highlight-danger" data-id="plank_mechanism" data-type="puzzle">栈道机关</span>的部分支撑点似乎可以按顺序操作。木板在脚下发出"嘎吱—嘎吱—"的呻吟声。`,
+        },
+      ],
+
       interactives: [
         {
           id: 'plank_inscription',
@@ -415,6 +427,16 @@ const chapter1Data = {
           description: '栈道承重结构异常，部分支撑点似乎可以移动。榫卯设计是从未见过的形制。',
           clueId: 'clue_plank_mechanism',
           effects: { intuition: 10 },
+        },
+        {
+          id: 'plank_mechanism',
+          name: '栈道机关',
+          type: 'puzzle',
+          puzzleId: 'puzzle_plank_sequence',
+          description: '尝试操作栈道机关',
+          conditions: {
+            requiredClue: 'clue_plank_mechanism',
+          },
         },
         {
           id: 'under_plank',
@@ -440,6 +462,18 @@ const chapter1Data = {
       name: '山腰石亭',
       description: `石亭建在栈道稍宽的平台处，四柱八角，顶覆积雪。亭中有石桌石凳，中央一个<span class="highlight highlight-examine" data-id="stone_incense_burner" data-type="examine">石制香炉</span>。`,
       ambience: '风声穿过八角的呜咽声',
+
+      // 场景描述变体
+      variants: [
+        {
+          priority: 15,
+          conditions: {
+            hasClue: 'clue_recent_incense',
+          },
+          description: `石亭建在栈道稍宽的平台处，四柱八角，顶覆积雪。亭中有石桌石凳，中央一个<span class="highlight highlight-examine" data-id="stone_incense_burner" data-type="examine">石制香炉</span>。<span class="highlight highlight-danger" data-id="incense_mechanism" data-type="puzzle">香炉机关</span>底部的刻文似乎隐藏着某种密码。`,
+        },
+      ],
+
       interactives: [
         {
           id: 'stone_incense_burner',
@@ -448,6 +482,16 @@ const chapter1Data = {
           description: '香炉里积满新雪，但炉底露出一截未燃尽的香根，还有一点点温度...就在这一两天内。',
           clueId: 'clue_recent_incense',
           effects: { intuition: 5 },
+        },
+        {
+          id: 'incense_mechanism',
+          name: '香炉机关',
+          type: 'puzzle',
+          puzzleId: 'puzzle_incense_burner',
+          description: '尝试解开香炉机关',
+          conditions: {
+            requiredClue: 'clue_recent_incense',
+          },
         },
         {
           id: 'pavilion_stone_tablet',
@@ -508,6 +552,43 @@ const chapter1Data = {
       name: '悬云观山门',
       description: `暴雪中的山门巍然矗立。石质门框在风雪中若隐若现，门楣上<span class="highlight highlight-clue" data-id="plaque" data-type="clue">"悬云观"三字匾额</span>被积雪半掩。山门两侧<span class="highlight highlight-examine" data-id="stone_lion_left" data-type="examine">石狮</span>头顶积雪，如戴白帽。`,
       ambience: '风雪呼啸，钟声隐约',
+
+      // 场景描述变体
+      variants: [
+        {
+          priority: 10,
+          conditions: {
+            timePhases: ['黄昏'],
+            weathers: ['blizzard'],
+            sanity: { min: 40 },
+            flags: ['!stone_lion_unlocked'],
+          },
+          description: `暮色中的悬云观山门。风雪稍歇，但寒意更甚。你注意到石狮底座的摩擦痕迹延伸向门内，似乎有人反复拖动重物。匾额上的"悬云观"三字在暮光中投下细长阴影。`,
+        },
+        {
+          priority: 20,
+          conditions: {
+            sanity: { max: 40 },
+            weathers: ['blizzard'],
+          },
+          description: `风雪中的山门在你眼中不断扭曲变形。石狮的眼睛仿佛在转动，瞳孔中的孔洞深不见底，像是要将你吸入。匾额上的字迹开始流动，"悬云观"三字如同蠕动的虫豸。`,
+        },
+        {
+          priority: 30,
+          conditions: {
+            flags: ['stone_lion_unlocked'],
+          },
+          description: `山门的石狮已经不再神秘——你知道它的眼睛里藏着暗格。暴雪中的山门依然巍然，但对你而言，这里不再那么不可捉摸。`,
+        },
+        {
+          priority: 15,
+          conditions: {
+            hasClue: 'clue_lion_keyhole',
+          },
+          description: `暴雪中的山门巍然矗立。石质门框在风雪中若隐若现，门楣上<span class="highlight highlight-clue" data-id="plaque" data-type="clue">"悬云观"三字匾额</span>被积雪半掩。山门两侧<span class="highlight highlight-examine" data-id="stone_lion_left" data-type="examine">石狮</span>头顶积雪，如戴白帽。<span class="highlight highlight-danger" data-id="stone_lion_mechanism" data-type="puzzle">石狮机关</span>的孔洞就在右眼处。`,
+        },
+      ],
+
       interactives: [
         {
           id: 'stone_lion_left',
@@ -521,6 +602,16 @@ const chapter1Data = {
             second: '石狮底座的摩擦痕迹延伸向门内，似乎有人反复拖动重物。',
             third: '石狮右眼瞳孔处有一个极小的孔洞，不仔细观察难以发现。',
             subsequent: '石狮静静地蹲坐，雪落在它的头顶，像是一顶白帽。',
+          },
+        },
+        {
+          id: 'stone_lion_mechanism',
+          name: '石狮机关',
+          type: 'puzzle',
+          puzzleId: 'puzzle_stone_lion',
+          description: '尝试激活石狮的机关',
+          conditions: {
+            requiredClue: 'clue_lion_keyhole',
           },
         },
         {
@@ -542,6 +633,9 @@ const chapter1Data = {
       exits: [
         { direction: 'enter', target: 'courtyard', name: '进入道观', locked: false },
       ],
+
+      // 触发分支点
+      branchPoints: ['branch_gate_choice'],
     },
 
     // 场景13：庭院（第2章开始）
@@ -1006,12 +1100,6 @@ const chapter1Data = {
       category: '神秘',
       description: '铃铛声、冰雹声、钟声都遵循"三短两长"的节奏模式。这是某种信号？',
     },
-    clue_plank_mechanism: {
-      id: 'clue_plank_mechanism',
-      name: '活动栈道',
-      category: '机关',
-      description: '栈道承重结构异常，部分支撑点可以移动。支撑柱上有齿轮结构。',
-    },
     clue_temple_structure: {
       id: 'clue_temple_structure',
       name: '悬空建筑',
@@ -1041,6 +1129,30 @@ const chapter1Data = {
       name: '陈青山的回避',
       category: '人物',
       description: '提到考古队失踪时，陈青山表情明显僵硬，话题回避。',
+    },
+    clue_plank_warning: {
+      id: 'clue_plank_warning',
+      name: '栈道警示',
+      category: '神秘',
+      description: '"栈道九曲，一步一劫。心若不坚，魂归深渊。"',
+    },
+    clue_plank_mechanism: {
+      id: 'clue_plank_mechanism',
+      name: '活动栈道',
+      category: '机关',
+      description: '栈道承重结构异常，部分支撑点可以移动。支撑柱上有齿轮结构。',
+    },
+    clue_gear_under_plank: {
+      id: 'clue_gear_under_plank',
+      name: '齿轮机关',
+      category: '机关',
+      description: '栈道支撑柱上有齿轮结构，正在缓慢转动，似乎是某种巨型机关的一部分。',
+    },
+    clue_recent_incense: {
+      id: 'clue_recent_incense',
+      name: '新燃香火',
+      category: '神秘',
+      description: '香炉里积满新雪，但炉底露出一截未燃尽的香根，还有一点点温度。就在这一两天内有人来过。',
     },
   },
 
@@ -1118,6 +1230,346 @@ const chapter1Data = {
       nextChapter: 2,
     },
   },
+
+  // ========== 谜题机关定义 ==========
+  puzzles: [
+    // 石狮机关谜题
+    {
+      id: 'puzzle_stone_lion',
+      name: '石狮机关',
+      type: 'password',
+      description: '石狮右眼的孔洞似乎是一个锁孔',
+      sceneId: 'gate',
+      solution: '789', // 玄真道长生卒年份的末尾
+      hint: '也许与道长的生卒年份有关...',
+      hints: [
+        '仔细观察石狮的眼睛...',
+        '玄真道长是明末人物，享年89岁...',
+        '尝试输入：789',
+      ],
+      successMessage: '石狮眼睛转动，露出一个暗格！',
+      failureMessage: '没有任何反应...',
+      wrongMessage: '似乎不是正确的数字...',
+      maxAttempts: 5,
+      conditions: {
+        requiredClue: 'clue_lion_keyhole',
+      },
+      effects: {
+        addItem: 'item_lion_key',
+        addClue: 'clue_lion_mechanism',
+        setFlag: 'stone_lion_unlocked',
+      },
+    },
+
+    // 栈道机关谜题
+    {
+      id: 'puzzle_plank_sequence',
+      name: '栈道机关',
+      type: 'sequence',
+      description: '栈道的部分木板似乎可以按顺序按下',
+      sceneId: 'plank_road',
+      solution: ['A', 'C', 'E', 'G'],
+      progressMessage: '木板发出轻微的咔嗒声...',
+      successMessage: '一段栈道缓缓放下，露出一条隐藏通道！',
+      failureMessage: '没有反应...',
+      conditions: {
+        requiredClue: 'clue_plank_mechanism',
+      },
+      effects: {
+        addClue: 'clue_hidden_path',
+        setFlag: 'plank_bridge_lowered',
+      },
+    },
+
+    // 香炉密码谜题
+    {
+      id: 'puzzle_incense_burner',
+      name: '香炉机关',
+      type: 'password',
+      description: '香炉底部刻着一些文字',
+      sceneId: 'stone_pavilion',
+      solution: 'TIANJI',
+      hint: '八卦方位对应字母...',
+      hints: [
+        '香炉上刻着：天机不可泄...',
+        '天机的拼音首字母...',
+        '尝试输入：TIANJI',
+      ],
+      successMessage: '香炉底部打开，露出一个暗格！',
+      failureMessage: '没有任何反应...',
+      conditions: {
+        requiredClue: 'clue_recent_incense',
+      },
+      effects: {
+        addItem: 'item_incense_talisman',
+        addClue: 'clue_incense_secret',
+      },
+    },
+
+    // 钟楼机关谜题
+    {
+      id: 'puzzle_bell_rhythm',
+      name: '钟楼密码',
+      type: 'sequence',
+      description: '钟声的节奏似乎是一种密码',
+      sceneId: 'main_hall',
+      solution: ['short', 'short', 'short', 'long', 'long'],
+      progressMessage: '古钟发出不同的声响...',
+      successMessage: '钟楼暗门打开！',
+      failureMessage: '钟声杂乱无章...',
+      conditions: {
+        requiredClue: 'clue_bell_pattern',
+      },
+      effects: {
+        addClue: 'clue_bell_tower',
+        setFlag: 'bell_tower_unlocked',
+      },
+    },
+
+    // 三清殿地板机关
+    {
+      id: 'puzzle_floor_mechanism',
+      name: '地板机关',
+      type: 'trigger',
+      description: '殿内地板有明显的倾斜',
+      sceneId: 'main_hall',
+      successMessage: '地板缓缓移动，露出一条密道！',
+      conditions: {
+        requiredItem: 'item_level',
+      },
+      effects: {
+        addClue: 'clue_floor_passage',
+        setFlag: 'floor_passage_open',
+      },
+    },
+  ],
+
+  // ========== 剧情分支定义 ==========
+  branches: [
+    // 火车站选择分支
+    {
+      id: 'branch_train_choice',
+      title: '车站抉择',
+      description: '电子屏出现异常信息，苏晓雨显得惊慌失措',
+      sceneId: 'train_station',
+      isFinal: false,
+      choices: [
+        {
+          id: 'choice_investigate_screen',
+          text: '调查电子屏异常',
+          description: '仔细查看屏幕上显示的信息',
+          effects: {
+            statusChanges: { intuition: 5, sanity: -3 },
+            addClue: 'clue_digital_anomaly',
+          },
+          narrative: '你靠近电子屏，屏幕上反复闪烁着"悬云观—未开通—404"的字样。这不是简单的故障...',
+        },
+        {
+          id: 'choice_comfort_xiaoyu',
+          text: '安慰苏晓雨',
+          description: '先安抚同伴的情绪',
+          effects: {
+            statusChanges: { sanity: 3 },
+            setFlag: 'comforted_xiaoyu',
+          },
+          narrative: '你握住苏晓雨的手，她的手冰凉。\"没事的，只是故障而已。\"你说道，但她眼中的疑虑并未消散。',
+        },
+        {
+          id: 'choice_ignore_warning',
+          text: '不以为意',
+          description: '忽略异常，继续行程',
+          effects: {
+            statusChanges: { sanity: -2 },
+            setFlag: 'ignored_warning',
+          },
+          narrative: '你摇了摇头，不过是电子设备故障，何必大惊小怪。',
+        },
+      ],
+    },
+
+    // 山路选择分支
+    {
+      id: 'branch_mountain_path',
+      title: '浓雾中的选择',
+      description: '山路被浓雾笼罩，前方传来诡异的铃铛声',
+      sceneId: 'mountain_road',
+      isFinal: false,
+      choices: [
+        {
+          id: 'choice_follow_sound',
+          text: '循声探查',
+          description: '跟随铃铛声一探究竟',
+          conditions: {
+            requiredStatus: { sanity: { min: 40 } },
+          },
+          effects: {
+            statusChanges: { sanity: -5, intuition: 10 },
+            addClue: 'clue_bell_rhythm',
+          },
+          narrative: '你决定跟随那诡异的铃声。铃声忽远忽近，像是某种召唤...',
+        },
+        {
+          id: 'choice_stay_together',
+          text: '保持队形',
+          description: '与同伴一起小心前进',
+          effects: {
+            setFlag: 'stayed_together',
+          },
+          data: {
+            statusChanges: { stamina: -3 },
+          },
+          narrative: '你没有贸然行动，而是提醒大家保持警惕。',
+        },
+        {
+          id: 'choice_record_sound',
+          text: '记录铃声',
+          description: '用手机录下铃声',
+          conditions: {
+            requiredItem: 'item_camera',
+          },
+          effects: {
+            statusChanges: { intuition: 5 },
+            addClue: 'clue_bell_rhythm_recorded',
+          },
+          narrative: '你悄悄打开手机，录下了这段诡异的铃声。',
+        },
+      ],
+    },
+
+    // 山门选择分支
+    {
+      id: 'branch_gate_choice',
+      title: '山门之前',
+      description: '面对悬云观山门，你注意到石狮的异常',
+      sceneId: 'gate',
+      isFinal: false,
+      choices: [
+        {
+          id: 'choice_examine_lion',
+          text: '仔细检查石狮',
+          description: '调查石狮眼睛的孔洞',
+          effects: {
+            statusChanges: { intuition: 8 },
+            addClue: 'clue_lion_keyhole',
+          },
+          narrative: '你俯身仔细查看石狮的眼睛。在右眼的瞳孔位置，你发现了一个极小的孔洞...',
+        },
+        {
+          id: 'choice_enter_directly',
+          text: '直接进入道观',
+          description: '不理会石狮的异常',
+          effects: {
+            setFlag: 'ignored_lion',
+            statusChanges: { sanity: -2 },
+          },
+          narrative: '你决定先进入道观再说，石狮不过是摆设罢了。',
+        },
+        {
+          id: 'choice_use_key_item',
+          text: '尝试用钥匙',
+          description: '如果有合适的钥匙...',
+          conditions: {
+            requiredItem: 'item_keychain',
+          },
+          effects: {
+            statusChanges: { intuition: 3 },
+            addClue: 'clue_lion_mechanism',
+            setFlag: 'stone_lion_unlocked',
+          },
+          narrative: '你拿出随身携带的桃木钥匙扣，试着插入石狮眼中的孔洞...',
+        },
+      ],
+    },
+
+    // 三清殿选择分支
+    {
+      id: 'branch_main_hall_choice',
+      title: '三清殿抉择',
+      description: '明心道士提及藏经阁的规矩',
+      sceneId: 'main_hall',
+      isFinal: false,
+      choices: [
+        {
+          id: 'choice_ask_bell',
+          text: '询问钟声之事',
+          description: '向明心道士询问夜里钟声',
+          effects: {
+            statusChanges: { sanity: -3 },
+            addClue: 'clue_bell_selfring',
+          },
+          narrative: '你压低声音：\"道长，夜里那钟声...\" 明心道士脸色微变：\"这个...施主还是不要过问的好。\"',
+        },
+        {
+          id: 'choice_ask_library',
+          text: '询问藏经阁',
+          description: '向明心道士请求进入藏经阁',
+          effects: {
+            setFlag: 'asked_library_permission',
+          },
+          narrative: '你提出想参观藏经阁。明心道士摇头：\"观主有令，藏经阁未经许可不得入内。\"',
+        },
+        {
+          id: 'choice_examine_statue',
+          text: '调查神像',
+          description: '仔细检查三清神像',
+          conditions: {
+            requiredStatus: { intuition: { min: 10 } },
+          },
+          effects: {
+            statusChanges: { intuition: 5 },
+            addClue: 'clue_statue_material',
+          },
+          narrative: '你走近神像。金漆剥落处露出泥土，但泥土在烛光下泛着金属光泽...这不是普通的泥塑！',
+        },
+      ],
+    },
+
+    // 结局分支
+    {
+      id: 'ending_believer',
+      title: '归真',
+      isEnding: true,
+      type: 'good',
+      description: '你决定留在悬云观，学习玄机子的机关术',
+      conditions: {
+        requiredChoice: { branchId: 'branch_main_hall_choice', choiceId: 'choice_ask_library' },
+        requiredFlag: { stone_lion_unlocked: true },
+        requiredClue: 'clue_temple_history',
+      },
+      effects: {
+        setFlag: 'ending_believer_achieved',
+      },
+    },
+
+    {
+      id: 'ending_leave',
+      title: '离去',
+      isEnding: true,
+      type: 'normal',
+      description: '你选择离开悬云山，返回城市',
+      conditions: {
+        requiredDecision: [{ id: 'branch_train_choice', choice: 'choice_ignore_warning' }],
+      },
+      effects: {
+        setFlag: 'ending_leave_achieved',
+      },
+    },
+
+    {
+      id: 'ending_trapped',
+      title: '困局',
+      isEnding: true,
+      type: 'bad',
+      description: '你被困在道观的机关中',
+      conditions: {
+        requiredFlag: { floor_passage_open: true },
+        requiredStatus: { sanity: { max: 20 } },
+      },
+      effects: {
+        setFlag: 'ending_trapped_achieved',
+      },
+    },
+  ],
 };
 
 export default chapter1Data;

@@ -6,6 +6,9 @@
 import { GameState } from './GameState.js';
 import { SceneManager } from './SceneManager.js';
 import { InteractionSystem } from './InteractionSystem.js';
+import { DynamicNarrativeSystem } from './DynamicNarrativeSystem.js';
+import { PuzzleSystem } from './PuzzleSystem.js';
+import { BranchSystem } from './BranchSystem.js';
 import chapter1Data from '../data/chapter1.js';
 
 export class GameEngine {
@@ -14,6 +17,9 @@ export class GameEngine {
     this.state = null;
     this.sceneManager = null;
     this.interactionSystem = null;
+    this.narrativeSystem = null;
+    this.puzzleSystem = null;
+    this.branchSystem = null;
     this.currentChapter = null;
   }
 
@@ -22,20 +28,32 @@ export class GameEngine {
    */
   async init() {
     console.log('初始化游戏引擎...');
-    
+
     // 初始化状态管理器
     this.state = new GameState(this.eventSystem);
     this.state.init();
-    
+
     // 初始化场景管理器
     this.sceneManager = new SceneManager(this.state, this.eventSystem);
-    
+
     // 初始化交互系统
     this.interactionSystem = new InteractionSystem(this.state, this.eventSystem, this);
-    
+
+    // 初始化动态叙事系统
+    this.narrativeSystem = new DynamicNarrativeSystem(this.state, this.eventSystem);
+
+    // 初始化谜题系统
+    this.puzzleSystem = new PuzzleSystem(this.state, this.eventSystem);
+
+    // 初始化分支系统
+    this.branchSystem = new BranchSystem(this.state, this.eventSystem);
+
     // 绑定事件监听
     this.bindEvents();
-    
+
+    // 绑定新系统事件
+    this.bindNewSystemEvents();
+
     console.log('✅ 游戏引擎初始化完成');
   }
 
@@ -226,7 +244,7 @@ export class GameEngine {
    */
   startChapter(chapterNumber) {
     console.log(`开始第 ${chapterNumber} 章`);
-    
+
     // 加载章节数据
     switch (chapterNumber) {
       case 1:
@@ -236,17 +254,23 @@ export class GameEngine {
         console.error(`未知的章节: ${chapterNumber}`);
         return;
     }
-    
+
     // 设置章节数据
     this.sceneManager.setChapterData(this.currentChapter);
-    
+
+    // 注册章节谜题机关
+    this.registerChapterPuzzles();
+
+    // 注册章节分支
+    this.registerChapterBranches();
+
     // 激活初始任务
     this.activateInitialQuests();
-    
+
     // 设置初始位置
     const startLocation = this.currentChapter.startLocation || 'gate';
     this.state.moveTo(startLocation);
-    
+
     // 触发章节开始事件
     this.eventSystem.emit('chapter:started', {
       chapter: chapterNumber,
@@ -689,5 +713,234 @@ export class GameEngine {
   getQuestData(questId) {
     if (!this.currentChapter || !this.currentChapter.quests) return null;
     return this.currentChapter.quests.find(q => q.id === questId);
+  }
+
+  // ========== 新系统集成方法 ==========
+
+  /**
+   * 绑定新系统事件
+   */
+  bindNewSystemEvents() {
+    // 监听谜题解决事件
+    this.eventSystem.on('puzzle:solved', (data) => {
+      const puzzle = this.puzzleSystem.getPuzzle(data.puzzleId);
+      if (puzzle && puzzle.effects) {
+        this.applyPuzzleEffects(puzzle);
+      }
+    });
+
+    // 监听分支选择事件
+    this.eventSystem.on('branch:choiceMade', (data) => {
+      console.log(`分支选择: ${data.branchId} -> ${data.choiceId}`);
+    });
+
+    // 监听游戏结束事件
+    this.eventSystem.on('game:ending', (data) => {
+      this.handleGameEnding(data);
+    });
+  }
+
+  /**
+   * 应用谜题效果
+   */
+  applyPuzzleEffects(puzzle) {
+    const effects = puzzle.effects;
+
+    // 添加道具
+    if (effects.addItem) {
+      this.state.addItem(effects.addItem);
+      this.eventSystem.emit('item:acquired', { itemId: effects.addItem });
+    }
+
+    // 添加线索
+    if (effects.addClue) {
+      this.state.addClue(effects.addClue);
+    }
+
+    // 设置标志
+    if (effects.setFlag) {
+      this.state.set(`world.flags.${effects.setFlag}`, true);
+    }
+
+    // 激活任务
+    if (effects.activateQuest) {
+      this.state.activateQuest(effects.activateQuest);
+    }
+
+    // 触发事件
+    if (effects.triggerEvent) {
+      this.eventSystem.emit('event:trigger', { eventId: effects.triggerEvent });
+    }
+
+    // 应用状态变化
+    if (effects.statusChanges) {
+      Object.entries(effects.statusChanges).forEach(([status, delta]) => {
+        this.state.modifyStatus(status, delta);
+      });
+    }
+  }
+
+  /**
+   * 处理游戏结束
+   */
+  handleGameEnding(data) {
+    console.log(`游戏结局: ${data.endingId} - ${data.title}`);
+
+    // 显示结局界面
+    this.eventSystem.emit('game:over', {
+      endingId: data.endingId,
+      title: data.title,
+      description: data.description,
+      type: data.type,
+    });
+  }
+
+  // ========== 动态叙事方法 ==========
+
+  /**
+   * 获取动态场景描述
+   */
+  getDynamicSceneDescription(sceneData) {
+    if (!this.narrativeSystem) return sceneData.description;
+    return this.narrativeSystem.getSceneDescription(sceneData);
+  }
+
+  /**
+   * 改变天气
+   */
+  changeWeather(weatherType) {
+    if (!this.narrativeSystem) return { success: false };
+    return this.narrativeSystem.changeWeather(weatherType);
+  }
+
+  /**
+   * 获取当前天气
+   */
+  getCurrentWeather() {
+    if (!this.narrativeSystem) return null;
+    return this.narrativeSystem.getCurrentWeather();
+  }
+
+  /**
+   * 记录决策
+   */
+  recordDecision(decisionId, choice, effects = {}) {
+    return this.narrativeSystem.recordDecision({ id: decisionId, choice, effects });
+  }
+
+  // ========== 谜题机关方法 ==========
+
+  /**
+   * 注册章节谜题
+   */
+  registerChapterPuzzles() {
+    if (!this.currentChapter || !this.currentChapter.puzzles) return;
+
+    this.puzzleSystem.registerPuzzles(this.currentChapter.puzzles);
+    console.log(`已注册 ${this.currentChapter.puzzles.length} 个谜题机关`);
+  }
+
+  /**
+   * 尝试解决谜题
+   */
+  trySolvePuzzle(puzzleId, attempt) {
+    const result = this.puzzleSystem.tryUnlock(puzzleId, attempt);
+
+    if (result.success && result.effects) {
+      this.applyPuzzleEffects(result);
+    }
+
+    return result;
+  }
+
+  /**
+   * 获取谜题提示
+   */
+  getPuzzleHint(puzzleId) {
+    return this.puzzleSystem.getPuzzleHint(puzzleId);
+  }
+
+  /**
+   * 检查机关是否可交互
+   */
+  isMechanismAvailable(puzzleId) {
+    return this.puzzleSystem.isPuzzleAvailable(puzzleId);
+  }
+
+  // ========== 分支系统方法 ==========
+
+  /**
+   * 注册章节分支
+   */
+  registerChapterBranches() {
+    if (!this.currentChapter || !this.currentChapter.branches) return;
+
+    this.branchSystem.registerBranches(this.currentChapter.branches);
+    console.log(`已注册 ${this.currentChapter.branches.length} 个剧情分支`);
+  }
+
+  /**
+   * 触发分支选择点
+   */
+  triggerBranch(branchId) {
+    return this.branchSystem.triggerBranchPoint(branchId);
+  }
+
+  /**
+   * 进行分支选择
+   */
+  makeBranchChoice(branchId, choiceId) {
+    return this.branchSystem.makeChoice(branchId, choiceId);
+  }
+
+  /**
+   * 获取可用分支
+   */
+  getAvailableBranches(sceneId = null) {
+    return this.branchSystem.getAvailableBranches(sceneId);
+  }
+
+  /**
+   * 检查结局条件
+   */
+  checkEnding(endingId) {
+    return this.branchSystem.checkEndingConditions(endingId);
+  }
+
+  /**
+   * 触发结局
+   */
+  triggerEnding(endingId) {
+    return this.branchSystem.triggerEnding(endingId);
+  }
+
+  /**
+   * 获取所有可用的结局
+   */
+  getAvailableEndings() {
+    return this.branchSystem.getAvailableEndings();
+  }
+
+  // ========== 记忆系统方法 ==========
+
+  /**
+   * 记录重要信息
+   */
+  remember(key, value) {
+    return this.state.remember(key, value);
+  }
+
+  /**
+   * 回忆信息
+   */
+  recall(key) {
+    return this.state.recall(key);
+  }
+
+  /**
+   * 检查是否记得
+   */
+  remembers(key) {
+    return this.state.remembers(key);
   }
 }

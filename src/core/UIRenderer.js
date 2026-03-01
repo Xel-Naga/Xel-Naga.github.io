@@ -135,6 +135,11 @@ export class UIRenderer {
     // 线索发现
     this.eventSystem.on('clue:discovered', (data) => {
       this.addFeedback(`发现线索: ${data.clueId}`, 'clue');
+      // 刷新场景（可能触发新的场景变体）
+      setTimeout(() => {
+        const sceneData = this.engine.getCurrentScene();
+        this.renderScene(sceneData);
+      }, 100);
     });
 
     // 位置变化
@@ -629,6 +634,9 @@ export class UIRenderer {
       case 'save':
         this.saveGame();
         break;
+      case 'newgame':
+        this.startNewGame();
+        break;
       case 'settings':
         this.showSettingsModal();
         break;
@@ -772,6 +780,18 @@ export class UIRenderer {
       this.addFeedback('游戏已保存', 'success');
     } else {
       this.addFeedback('保存失败', 'danger');
+    }
+  }
+
+  /**
+   * 开始新游戏
+   */
+  startNewGame() {
+    if (confirm('确定要开始新游戏吗？当前进度将会丢失。')) {
+      // 清除存档
+      localStorage.removeItem('xuan_guan_mystery_save');
+      // 重新加载页面并强制新游戏
+      window.location.href = window.location.pathname + '?new=1';
     }
   }
 

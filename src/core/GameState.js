@@ -40,6 +40,10 @@ export class GameState {
         visitedLocations: ['gate'],
         triggeredEvents: [],
         flags: {}, // 各种剧情标志
+        decisions: [], // 玩家决策历史
+        memory: {}, // 玩家记忆（重要信息）
+        puzzleStates: {}, // 机关状态
+        branchStates: {}, // 分支状态
       },
       
       // NPC关系状态
@@ -78,15 +82,31 @@ export class GameState {
 
   /**
    * 初始化状态
+   * @param {boolean} forceNewGame - 强制开始新游戏
    */
-  init() {
+  init(forceNewGame = false) {
+    // 检查URL参数是否为新游戏
+    const urlParams = new URLSearchParams(window.location.search);
+    const isNewGame = forceNewGame || urlParams.get('new') === '1';
+
+    // 清除URL参数（只使用一次）
+    if (isNewGame) {
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
     // 尝试加载存档
     const saved = this.loadFromStorage();
-    if (saved) {
-      this.state = this.mergeState(saved);
+    if (saved && !isNewGame) {
+      this.state = this.mergeState(saved, false);
       console.log('📂 已加载存档');
     } else {
-      console.log('🆕 新游戏开始');
+      // 新游戏或无法加载存档时，重置所有状态
+      this.state = this.deepClone(this.defaultState);
+      if (isNewGame) {
+        console.log('🆕 全新游戏开始');
+      } else {
+        console.log('🆕 新游戏开始');
+      }
     }
   }
 
@@ -308,6 +328,16 @@ export class GameState {
       this.set('player.clues', clues);
       this.eventSystem.emit('clue:discovered', { clueId });
     }
+  }
+
+  /**
+   * 检查是否拥有线索
+   * @param {string} clueId - 线索ID
+   * @returns {boolean}
+   */
+  hasClue(clueId) {
+    const clues = this.get('player.clues');
+    return clues.includes(clueId);
   }
 
   // ========== 道具系统扩展方法 ==========
@@ -587,11 +617,24 @@ export class GameState {
   /**
    * 合并存档状态（处理版本差异）
    * @param {Object} saved - 存档状态
+   * @param {boolean} isNewGame - 是否为新游戏（重置谜题/分支状态）
    * @returns {Object}
    */
-  mergeState(saved) {
+  mergeState(saved, isNewGame = false) {
     // 深度合并，保留默认值
-    return this.deepMerge(this.deepClone(this.defaultState), saved);
+    const merged = this.deepMerge(this.deepClone(this.defaultState), saved);
+
+    // 新游戏时重置谜题、机关、分支状态（不允许继承）
+    if (isNewGame) {
+      merged.world.puzzleStates = {};
+      merged.world.branchStates = {};
+      merged.world.decisions = [];
+      merged.world.memory = {};
+      // 重置事件计数器（可选）
+      merged.eventCounts = {};
+    }
+
+    return merged;
   }
 
   /**
@@ -623,5 +666,337 @@ export class GameState {
       }
     }
     return target;
+  }
+
+  // ========== 记忆系统 ==========
+
+  /**
+   * 记录重要信息到记忆
+   * @param {string} key - 记忆键
+   * @param {*} value - 记忆值
+   */
+  remember(key, value) {
+    const memory = this.get('world.memory') || {};
+    memory[key] = {
+      value,
+      timestamp: Date.now(),
+    };
+    this.set('world.memory', memory);
+    this.eventSystem.emit('memory:recorded', { key, value });
+  }
+
+  /**
+   * 回忆重要信息
+   * @param {string} key - 记忆键
+   * @returns {*}
+   */
+  recall(key) {
+    const memory = this.get('world.memory') || {};
+    return memory[key]?.value;
+  }
+
+  /**
+   * 检查是否记得某事
+   * @param {string} key - 记忆键
+   * @returns {boolean}
+   */
+  remembers(key) {
+    const memory = this.get('world.memory') || {};
+    return !!memory[key];
+  }
+
+  /**
+   * 获取所有记忆
+   * @returns {Object}
+   */
+  getAllMemories() {
+    return this.get('world.memory') || {};
+  }
+
+  // ========== 机关状态系统 ==========
+
+  /**
+   * 设置机关状态
+   * @param {string} puzzleId - 机关ID
+   * @param {string} state - 状态 (locked/unlocked/solved/failed)
+   * @param {Object} data - 额外数据
+   */
+  setPuzzleState(puzzleId, state, data = {}) {
+    const states = this.get('world.puzzleStates') || {};
+    states[puzzleId] = {
+      state,
+      ...data,
+      updatedAt: Date.now(),
+    };
+    this.set('world.puzzleStates', states);
+    this.eventSystem.emit('puzzle:stateChanged', { puzzleId, state, data });
+  }
+
+  /**
+   * 获取机关状态
+   * @param {string} puzzleId - 机关ID
+   * @returns {Object}
+   */
+  getPuzzleState(puzzleId) {
+    const states = this.get('world.puzzleStates') || {};
+    return states[puzzleId] || { state: 'locked' };
+  }
+
+  /**
+   * 检查机关是否已解锁
+   * @param {string} puzzleId - 机关ID
+   * @returns {boolean}
+   */
+  isPuzzleUnlocked(puzzleId) {
+    const state = this.getPuzzleState(puzzleId);
+    return state.state === 'unlocked' || state.state === 'solved';
+  }
+
+  /**
+   * 检查机关是否已解决
+   * @param {string} puzzleId - 机关ID
+   * @returns {boolean}
+   */
+  isPuzzleSolved(puzzleId) {
+    const state = this.getPuzzleState(puzzleId);
+    return state.state === 'solved';
+  }
+
+  /**
+   * 尝试解决机关
+   * @param {string} puzzleId - 机关ID
+   * @param {*} attempt - 尝试的解
+   * @param {Object} puzzleData - 机关数据
+   * @returns {Object} 结果
+   */
+  attemptPuzzle(puzzleId, attempt, puzzleData) {
+    const currentState = this.getPuzzleState(puzzleId);
+
+    // 检查是否已经解决
+    if (currentState.state === 'solved') {
+      return { success: false, reason: 'already_solved', message: '这个机关已经被解决了。' };
+    }
+
+    // 检查是否有尝试次数限制
+    const maxAttempts = puzzleData.maxAttempts || 999;
+    const attempts = currentState.attempts || 0;
+
+    if (attempts >= maxAttempts) {
+      this.setPuzzleState(puzzleId, 'failed', { reason: 'max_attempts' });
+      return { success: false, reason: 'max_attempts', message: '尝试次数已用尽。' };
+    }
+
+    // 验证答案
+    const isCorrect = this.verifyPuzzleSolution(puzzleData, attempt);
+
+    // 更新尝试次数
+    const newAttempts = attempts + 1;
+    this.set(`world.puzzleStates.${puzzleId}.attempts`, newAttempts);
+
+    if (isCorrect) {
+      this.setPuzzleState(puzzleId, 'solved', {
+        solvedAt: Date.now(),
+        attempts: newAttempts,
+      });
+
+      // 触发完成事件
+      this.eventSystem.emit('puzzle:solved', { puzzleId, attempts: newAttempts });
+
+      return {
+        success: true,
+        message: puzzleData.successMessage || '机关被成功解开！',
+        effects: puzzleData.successEffects,
+      };
+    } else {
+      // 尝试失败
+      const remaining = maxAttempts - newAttempts;
+
+      if (remaining <= 0) {
+        this.setPuzzleState(puzzleId, 'failed', { reason: 'max_attempts' });
+        return {
+          success: false,
+          reason: 'max_attempts',
+          message: puzzleData.failureMessage || '答案错误，尝试次数已用尽。',
+        };
+      }
+
+      return {
+        success: false,
+        message: puzzleData.wrongMessage || `答案错误，还剩 ${remaining} 次尝试机会。`,
+        remainingAttempts: remaining,
+      };
+    }
+  }
+
+  /**
+   * 验证谜题答案
+   */
+  verifyPuzzleSolution(puzzleData, attempt) {
+    const { type, solution } = puzzleData;
+
+    switch (type) {
+      case 'password':
+        // 密码验证（支持大小写不敏感）
+        return String(attempt).toLowerCase() === String(solution).toLowerCase();
+
+      case 'sequence':
+        // 顺序验证
+        if (!Array.isArray(attempt)) return false;
+        return attempt.length === solution.length &&
+          attempt.every((item, index) => item === solution[index]);
+
+      case 'combination':
+        // 组合验证（忽略顺序）
+        if (!Array.isArray(attempt)) return false;
+        const attemptSet = new Set(attempt);
+        const solutionSet = new Set(solution);
+        return attemptSet.size === solutionSet.size &&
+          [...solutionSet].every(item => attemptSet.has(item));
+
+      case 'pattern':
+        // 图案验证
+        return JSON.stringify(attempt) === JSON.stringify(solution);
+
+      case 'custom':
+        // 自定义验证函数
+        if (typeof puzzleData.verify === 'function') {
+          return puzzleData.verify(attempt, puzzleData);
+        }
+        return false;
+
+      default:
+        return attempt === solution;
+    }
+  }
+
+  // ========== 分支状态系统 ==========
+
+  /**
+   * 记录分支选择
+   * @param {string} branchId - 分支ID
+   * @param {string} choiceId - 选择ID
+   * @param {Object} metadata - 额外元数据
+   */
+  recordBranchChoice(branchId, choiceId, metadata = {}) {
+    const branches = this.get('world.branchStates') || {};
+
+    if (!branches[branchId]) {
+      branches[branchId] = {
+        choices: [],
+        createdAt: Date.now(),
+      };
+    }
+
+    branches[branchId].choices.push({
+      choiceId,
+      timestamp: Date.now(),
+      ...metadata,
+    });
+
+    this.set('world.branchStates', branches);
+    this.eventSystem.emit('branch:choiceMade', { branchId, choiceId, metadata });
+  }
+
+  /**
+   * 获取分支选择历史
+   * @param {string} branchId - 分支ID
+   * @returns {Array}
+   */
+  getBranchChoices(branchId) {
+    const branches = this.get('world.branchStates') || {};
+    return branches[branchId]?.choices || [];
+  }
+
+  /**
+   * 检查是否做过特定选择
+   * @param {string} branchId - 分支ID
+   * @param {string} choiceId - 选择ID
+   * @returns {boolean}
+   */
+  hasChosen(branchId, choiceId) {
+    const choices = this.getBranchChoices(branchId);
+    return choices.some(c => c.choiceId === choiceId);
+  }
+
+  /**
+   * 获取分支的最新选择
+   * @param {string} branchId - 分支ID
+   * @returns {string|null}
+   */
+  getLatestChoice(branchId) {
+    const choices = this.getBranchChoices(branchId);
+    if (choices.length === 0) return null;
+    return choices[choices.length - 1].choiceId;
+  }
+
+  /**
+   * 检查分支是否完成
+   * @param {string} branchId - 分支ID
+   * @returns {boolean}
+   */
+  isBranchComplete(branchId) {
+    const branches = this.get('world.branchStates') || {};
+    return !!branches[branchId]?.complete;
+  }
+
+  /**
+   * 标记分支完成
+   * @param {string} branchId - 分支ID
+   */
+  completeBranch(branchId) {
+    const branches = this.get('world.branchStates') || {};
+    if (branches[branchId]) {
+      branches[branchId].complete = true;
+      branches[branchId].completedAt = Date.now();
+      this.set('world.branchStates', branches);
+    }
+  }
+
+  // ========== 决策系统 ==========
+
+  /**
+   * 记录玩家决策
+   * @param {string} decisionId - 决策ID
+   * @param {string} choice - 选择
+   * @param {Object} effects - 决策效果
+   */
+  recordDecision(decisionId, choice, effects = {}) {
+    const decisions = this.get('world.decisions') || [];
+    decisions.push({
+      id: decisionId,
+      choice,
+      timestamp: Date.now(),
+      ...effects,
+    });
+    this.set('world.decisions', decisions);
+
+    // 触发决策事件
+    this.eventSystem.emit('decision:made', { id: decisionId, choice, effects });
+  }
+
+  /**
+   * 检查是否做过特定决策
+   * @param {string} decisionId - 决策ID
+   * @param {string} choice - 特定选择（可选）
+   * @returns {boolean}
+   */
+  hasMadeDecision(decisionId, choice = null) {
+    const decisions = this.get('world.decisions') || [];
+    return decisions.some(d => {
+      if (d.id !== decisionId) return false;
+      if (choice === null) return true;
+      return d.choice === choice;
+    });
+  }
+
+  /**
+   * 获取决策历史
+   * @param {string} decisionId - 决策ID（可选）
+   * @returns {Array}
+   */
+  getDecisionHistory(decisionId = null) {
+    const decisions = this.get('world.decisions') || [];
+    if (decisionId === null) return decisions;
+    return decisions.filter(d => d.id === decisionId);
   }
 }

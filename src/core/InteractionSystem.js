@@ -32,6 +32,8 @@ export class InteractionSystem {
     this.register('device', this.handleDevice.bind(this));
     // 移动
     this.register('move', this.handleMove.bind(this));
+    // 谜题机关
+    this.register('puzzle', this.handlePuzzle.bind(this));
   }
 
   /**
@@ -324,6 +326,85 @@ export class InteractionSystem {
   }
 
   /**
+   * 处理谜题机关交互
+   */
+  handlePuzzle(elementId, action) {
+    const sceneData = this.getCurrentSceneData();
+    const interactive = sceneData?.interactives?.find(i => i.id === elementId);
+
+    if (!interactive) {
+      return { success: false, reason: 'not_found' };
+    }
+
+    // 检查前置条件
+    if (interactive.conditions) {
+      if (!this.checkConditions(interactive.conditions)) {
+        return {
+          success: false,
+          reason: 'locked',
+          message: interactive.lockedMessage || '这个机关目前无法使用。',
+        };
+      }
+    }
+
+    const puzzleId = interactive.puzzleId;
+
+    // 如果有 gameEngine，尝试通过谜题系统处理
+    if (this.gameEngine && this.gameEngine.puzzleSystem) {
+      // 检查是否可用
+      if (!this.gameEngine.puzzleSystem.isPuzzleAvailable(puzzleId)) {
+        return {
+          success: false,
+          reason: 'locked',
+          message: interactive.lockedMessage || '这个机关目前无法使用。',
+        };
+      }
+
+      // 获取谜题数据
+      const puzzle = this.gameEngine.puzzleSystem.getPuzzle(puzzleId);
+      if (!puzzle) {
+        return { success: false, reason: 'not_found', message: '谜题数据未找到。' };
+      }
+
+      // 如果只是查询（点击查看）或点击解谜按钮，返回提示信息
+      if (action === 'query' || action === 'examine' || action === 'puzzle') {
+        return {
+          success: true,
+          type: 'puzzle',
+          puzzleId: puzzleId,
+          puzzleType: puzzle.type,
+          description: interactive.description,
+          hint: puzzle.hint,
+          maxAttempts: puzzle.maxAttempts,
+          state: this.state.getPuzzleState(puzzleId),
+        };
+      }
+
+      // 如果提供了答案，尝试解决
+      if (action === 'solve' || action === 'submit') {
+        // 这里假设答案通过 interactive.attempt 传入
+        // 实际使用时可能需要通过 UI 获取输入
+        return {
+          success: true,
+          type: 'puzzle',
+          puzzleId: puzzleId,
+          puzzleType: puzzle.type,
+          prompt: puzzle.prompt || '请输入答案：',
+          hint: puzzle.hint,
+          maxAttempts: puzzle.maxAttempts,
+        };
+      }
+    }
+
+    // 默认处理：显示描述
+    return {
+      success: true,
+      type: 'puzzle',
+      message: interactive.description || '这是一个谜题机关。',
+    };
+  }
+
+  /**
    * 处理移动
    */
   handleMove(exitData, action) {
@@ -415,5 +496,57 @@ export class InteractionSystem {
       name: npcId,
       initialDialogue: '',
     };
+  }
+
+  /**
+   * 检查前置条件是否满足
+   * @param {Object} conditions - 条件对象
+   * @returns {boolean}
+   */
+  checkConditions(conditions) {
+    if (!conditions) return true;
+
+    // 检查需要的线索
+    if (conditions.requiredClue) {
+      if (!this.state.hasClue(conditions.requiredClue)) {
+        console.log(`需要线索: ${conditions.requiredClue}, 当前未拥有`);
+        return false;
+      }
+    }
+
+    // 检查需要的道具
+    if (conditions.requiredItem) {
+      if (!this.state.hasItem(conditions.requiredItem)) {
+        console.log(`需要道具: ${conditions.requiredItem}, 当前未拥有`);
+        return false;
+      }
+    }
+
+    // 检查需要的任务状态
+    if (conditions.requiredQuest) {
+      if (!this.state.isQuestCompleted(conditions.requiredQuest)) {
+        console.log(`需要完成任务: ${conditions.requiredQuest}, 当前未完成`);
+        return false;
+      }
+    }
+
+    // 检查需要的分支选择
+    if (conditions.requiredBranch) {
+      if (!this.state.hasChosen(conditions.requiredBranch.branchId, conditions.requiredBranch.choiceId)) {
+        return false;
+      }
+    }
+
+    // 检查状态阈值
+    if (conditions.minStatus) {
+      for (const [status, min] of Object.entries(conditions.minStatus)) {
+        const current = this.state.get(`status.${status}.current`);
+        if (current !== undefined && current < min) {
+          return false;
+        }
+      }
+    }
+
+    return true;
   }
 }

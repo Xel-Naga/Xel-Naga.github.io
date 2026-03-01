@@ -312,6 +312,84 @@ TaositStory/
 
 ---
 
+## 最近更新 - 阶段二进展
+
+### 2026年3月1日 - 阶段二核心系统开发 ✅
+
+#### 1. 动态叙事系统
+
+**新增文件**：
+- `src/core/DynamicNarrativeSystem.js` - 动态叙事系统
+
+**功能特性**：
+- **天气系统**：6种天气类型（晴/多云/雾/雨/暴雪/雷暴），影响体温和理智
+- **场景描述变体**：根据时间、天气、理智、体温、进度动态生成描述
+- **决策影响系统**：记录玩家选择并应用效果
+- **NPC关系影响**：根据互动类型调整NPC关系和信任度
+- **记忆系统**：记录玩家的重要发现
+
+#### 2. 谜题机关系统
+
+**新增文件**：
+- `src/core/PuzzleSystem.js` - 谜题机关系统
+
+**功能特性**：
+- **机关解锁**：检查道具/线索/任务条件来解锁机关
+- **谜题类型**：
+  - 密码输入（password）- 输入正确密码
+  - 顺序点击（sequence）- 按正确顺序点击
+  - 物品放置（placement）- 放置正确物品
+  - 触发器（trigger）- 满足条件触发
+- **验证机制**：答案验证、尝试次数限制、失败处理
+- **效果应用**：解决谜题后自动添加道具、线索、触发事件
+
+**第一章谜题示例**：
+- 石狮机关（密码：789）
+- 栈道机关（顺序解谜）
+- 香炉机关（密码：TIANJI）
+- 钟楼机关（节奏谜题）
+- 地板机关（触发器）
+
+#### 3. 剧情分支系统
+
+**新增文件**：
+- `src/core/BranchSystem.js` - 剧情分支系统
+
+**功能特性**：
+- **分支选择点**：根据条件显示可用选项
+- **选择后果跟踪**：记录选择并应用效果
+- **多结局支持**：3种结局类型（normal/good/bad）
+- **条件检查**：任务、道具、线索、状态、NPC关系条件
+
+**第一章分支示例**：
+- 火车站抉择（3个选项）
+- 山路浓雾选择（3个选项）
+- 山门之前选择（3个选项）
+- 三清殿抉择（3个选项）
+- 3种结局：归真/离去/困局
+
+#### 4. GameState扩展
+
+**新增状态管理**：
+- `world.decisions[]` - 玩家决策历史
+- `world.memory{}` - 玩家记忆
+- `world.puzzleStates{}` - 机关状态
+- `world.branchStates{}` - 分支状态
+
+**新增方法**：
+- 记忆系统：`remember()`, `recall()`, `remembers()`
+- 机关系统：`setPuzzleState()`, `getPuzzleState()`, `attemptPuzzle()`, `verifyPuzzleSolution()`
+- 分支系统：`recordBranchChoice()`, `getBranchChoices()`, `hasChosen()`, `completeBranch()`
+
+#### 5. GameEngine集成
+
+**新增方法**：
+- 动态叙事：`getDynamicSceneDescription()`, `changeWeather()`, `recordDecision()`
+- 谜题机关：`registerChapterPuzzles()`, `trySolvePuzzle()`, `getPuzzleHint()`
+- 分支系统：`registerChapterBranches()`, `triggerBranch()`, `makeBranchChoice()`, `triggerEnding()`
+
+---
+
 ## 待完成任务（阶段三）
 
 ### 阶段三：系统完善与内容扩展
@@ -410,11 +488,14 @@ TaositStory/
 | index.html | 主HTML入口 | ~4.8KB |
 | src/main.js | 游戏主入口 | ~3.3KB |
 | src/core/EventSystem.js | 事件系统 | ~2.4KB |
-| src/core/GameState.js | 状态管理 | ~13KB |
-| src/core/GameEngine.js | 游戏引擎 | ~9KB |
+| src/core/GameState.js | 状态管理 | ~15KB |
+| src/core/GameEngine.js | 游戏引擎 | ~12KB |
 | src/core/SceneManager.js | 场景管理 | ~8KB |
 | src/core/InteractionSystem.js | 交互系统 | ~10KB |
 | src/core/UIRenderer.js | UI渲染器 | ~18KB |
+| src/core/DynamicNarrativeSystem.js | 动态叙事系统 | ~8KB |
+| src/core/PuzzleSystem.js | 谜题机关系统 | ~7KB |
+| src/core/BranchSystem.js | 剧情分支系统 | ~6KB |
 | src/components/InteractionModal.js | 交互弹窗 | ~8.9KB |
 | src/components/QuestPanel.js | 任务面板 | ~7.1KB |
 | src/components/DialogueModal.js | 对话弹窗 | ~7.9KB |
@@ -426,7 +507,7 @@ TaositStory/
 | src/assets/styles/dialogue-modal.css | 对话样式 | ~5.8KB |
 | src/assets/styles/inventory-modal.css | 道具面板样式 | ~5.5KB |
 
-**总计代码量**：约 185KB JavaScript/CSS + 4.8KB HTML
+**总计代码量**：约 210KB JavaScript/CSS + 4.8KB HTML
 
 ---
 

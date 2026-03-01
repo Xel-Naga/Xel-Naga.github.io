@@ -106,9 +106,35 @@ class AdventureGame {
         <h1 class="game-over-title">${data.title || '游戏结束'}</h1>
         <p class="game-over-description">${data.description || ''}</p>
         <p class="game-over-hint">${data.hint || ''}</p>
-        <button class="game-over-btn" onclick="location.reload()">重新开始</button>
+        <div class="game-over-buttons">
+          <button class="game-over-btn" id="btn-new-game">全新开始</button>
+          <button class="game-over-btn btn-continue" id="btn-continue">继续游戏</button>
+        </div>
       </div>
     `;
+
+    // 绑定全新开始按钮
+    setTimeout(() => {
+      const newGameBtn = document.getElementById('btn-new-game');
+      const continueBtn = document.getElementById('btn-continue');
+
+      if (newGameBtn) {
+        newGameBtn.addEventListener('click', () => {
+          // 清除存档
+          localStorage.removeItem('xuan_guan_mystery_save');
+          // 重新加载页面（不带存档）
+          location.href = location.pathname + location.search;
+        });
+      }
+
+      if (continueBtn) {
+        continueBtn.addEventListener('click', () => {
+          // 关闭遮罩，继续当前游戏
+          overlay.remove();
+          style.remove();
+        });
+      }
+    }, 100);
 
     // 添加样式
     const style = document.createElement('style');
@@ -149,6 +175,12 @@ class AdventureGame {
         font-style: italic;
         margin-bottom: 40px;
       }
+      .game-over-buttons {
+        display: flex;
+        gap: 20px;
+        justify-content: center;
+        margin-top: 20px;
+      }
       .game-over-btn {
         padding: 15px 40px;
         font-size: 18px;
@@ -162,6 +194,12 @@ class AdventureGame {
       .game-over-btn:hover {
         background: #6bb3ff;
         transform: scale(1.05);
+      }
+      .game-over-btn.btn-continue {
+        background: #44a855;
+      }
+      .game-over-btn.btn-continue:hover {
+        background: #5bc467;
       }
     `;
 
