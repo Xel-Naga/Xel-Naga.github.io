@@ -1,0 +1,149 @@
+/* ===== 确认对话框样式 ===== */
+.confirm-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 4000;
+  animation: confirm-fade-in 0.2s ease;
+}
+
+.confirm-modal {
+  background: linear-gradient(145deg, #1a1a2e 0%, #16213e 100%);
+  border-radius: 12px;
+  padding: 25px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  animation: confirm-slide-in 0.3s ease;
+}
+
+/* 类型样式 */
+.confirm-modal-info {
+  border: 1px solid rgba(91, 141, 184, 0.5);
+}
+
+.confirm-modal-warning {
+  border: 1px solid rgba(184, 168, 91, 0.5);
+}
+
+.confirm-modal-danger {
+  border: 1px solid rgba(184, 91, 91, 0.5);
+}
+
+/* 标题 */
+.confirm-title {
+  font-family: 'Noto Serif SC', 'SimSun', serif;
+  font-size: 1.3rem;
+  color: var(--color-bone-white);
+  margin: 0 0 15px 0;
+  text-align: center;
+}
+
+.confirm-modal-info .confirm-title {
+  color: var(--color-examine);
+}
+
+.confirm-modal-warning .confirm-title {
+  color: var(--color-clue);
+}
+
+.confirm-modal-danger .confirm-title {
+  color: var(--color-faded-red);
+}
+
+/* 消息 */
+.confirm-message {
+  color: var(--color-bone-white-dark);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin-bottom: 25px;
+  text-align: center;
+}
+
+/* 按钮容器 */
+.confirm-buttons {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+}
+
+/* 按钮 */
+.confirm-btn {
+  padding: 10px 30px;
+  font-family: 'Noto Serif SC', 'SimSun', serif;
+  font-size: 0.95rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 100px;
+}
+
+.confirm-btn-cancel {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-bone-white-dark);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.confirm-btn-cancel:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.confirm-btn-confirm {
+  color: #f5f5f5;
+}
+
+.confirm-modal-info .confirm-btn-confirm {
+  background: linear-gradient(135deg, #5b8db8 0%, #3d6a8a 100%);
+  border: 1px solid #5b8db8;
+}
+
+.confirm-modal-info .confirm-btn-confirm:hover {
+  background: linear-gradient(135deg, #6a9cc8 0%, #4d7a9a 100%);
+}
+
+.confirm-modal-warning .confirm-btn-confirm {
+  background: linear-gradient(135deg, #b8a85b 0%, #8a7a3d 100%);
+  border: 1px solid #b8a85b;
+}
+
+.confirm-modal-warning .confirm-btn-confirm:hover {
+  background: linear-gradient(135deg, #c8b86a 0%, #9a8a4d 100%);
+}
+
+.confirm-modal-danger .confirm-btn-confirm {
+  background: linear-gradient(135deg, #b85b5b 0%, #8a3d3d 100%);
+  border: 1px solid #b85b5b;
+}
+
+.confirm-modal-danger .confirm-btn-confirm:hover {
+  background: linear-gradient(135deg, #c86a6a 0%, #9a4d4d 100%);
+}
+
+/* 动画 */
+@keyframes confirm-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes confirm-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

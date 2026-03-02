@@ -9,6 +9,7 @@ import { DialogueModal } from '../components/DialogueModal.js';
 import { InventoryModal } from '../components/InventoryModal.js';
 import { DecisionModal } from '../components/DecisionModal.js';
 import { ItemSelectorModal } from '../components/ItemSelectorModal.js';
+import { ConfirmModal } from '../components/ConfirmModal.js';
 
 export class UIRenderer {
   constructor(engine, eventSystem) {
@@ -37,6 +38,7 @@ export class UIRenderer {
     this.inventoryModal = new InventoryModal(this.eventSystem, this.engine);
     this.decisionModal = new DecisionModal(this.eventSystem, this);
     this.itemSelectorModal = new ItemSelectorModal(this.eventSystem, this.engine);
+    this.confirmModal = new ConfirmModal();
     
     // 绑定UI事件
     this.bindEvents();
@@ -1001,8 +1003,9 @@ export class UIRenderer {
     setTimeout(() => {
       const resetBtn = document.getElementById('btn-reset-game');
       if (resetBtn) {
-        resetBtn.addEventListener('click', () => {
-          if (confirm('确定要重新开始游戏吗？当前进度将丢失。')) {
+        resetBtn.addEventListener('click', async () => {
+          const confirmed = await this.confirmModal.confirm('重新开始', '确定要重新开始游戏吗？当前进度将丢失。', 'danger');
+          if (confirmed) {
             this.engine.state.reset();
             location.reload();
           }
@@ -1026,8 +1029,9 @@ export class UIRenderer {
   /**
    * 开始新游戏
    */
-  startNewGame() {
-    if (confirm('确定要开始新游戏吗？当前进度将会丢失。')) {
+  async startNewGame() {
+    const confirmed = await this.confirmModal.confirm('开始新游戏', '确定要开始新游戏吗？当前进度将会丢失。', 'danger');
+    if (confirmed) {
       // 清除存档
       localStorage.removeItem('xuan_guan_mystery_save');
       // 重新加载页面并强制新游戏

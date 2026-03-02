@@ -6,6 +6,7 @@
 import { GameEngine } from './core/GameEngine.js';
 import { UIRenderer } from './core/UIRenderer.js';
 import { EventSystem } from './core/EventSystem.js';
+import { ConfirmModal } from './components/ConfirmModal.js';
 
 // 游戏配置
 const GAME_CONFIG = {
@@ -22,6 +23,7 @@ class AdventureGame {
     this.engine = null;
     this.ui = null;
     this.eventSystem = null;
+    this.confirmModal = new ConfirmModal();
     this.isInitialized = false;
   }
 
@@ -250,14 +252,14 @@ class AdventureGame {
    * 显示设置（启动界面）
    */
   showStartScreenSettings() {
-    alert('设置功能开发中...');
+    this.confirmModal.alert('游戏设置', '设置功能开发中...', 'info');
   }
 
   /**
    * 显示制作团队
    */
   showCredits() {
-    alert('《悬观谜案：百年轮回》\n\n一款文字交互式推理解密游戏\n\n开发中...');
+    this.confirmModal.alert('制作团队', '《悬观谜案：百年轮回》\n\n一款文字交互式推理解密游戏\n\n开发中...', 'info');
   }
 
   /**

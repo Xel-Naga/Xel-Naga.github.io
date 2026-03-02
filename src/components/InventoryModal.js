@@ -3,6 +3,8 @@
  * 显示背包中的道具，支持使用、组合、丢弃等操作
  */
 
+import { ConfirmModal } from './ConfirmModal.js';
+
 export class InventoryModal {
   constructor(eventSystem, engine) {
     this.eventSystem = eventSystem;
@@ -11,6 +13,7 @@ export class InventoryModal {
     this.selectedItem = null;
     this.currentFilter = 'all'; // all, tool, consumable, document, key, gear, book
     this.items = [];
+    this.confirmModal = new ConfirmModal();
 
     // 绑定事件
     this.bindEvents();
@@ -455,7 +458,7 @@ export class InventoryModal {
   /**
    * 组合道具
    */
-  combineItem(item) {
+  async combineItem(item) {
     const combineResult = this.getCombineResult(item);
     if (!combineResult) {
       this.eventSystem.emit('feedback:show', {
@@ -466,7 +469,8 @@ export class InventoryModal {
     }
 
     // 确认组合
-    if (confirm(`将 "${item.name}" 和 "${combineResult.ingredientName}" 组合成 "${combineResult.resultName}"？`)) {
+    const confirmed = await this.confirmModal.confirm('组合道具', `将 "${item.name}" 和 "${combineResult.ingredientName}" 组合成 "${combineResult.resultName}"？`, 'warning');
+    if (confirmed) {
       const result = this.engine.combineItems(item.id, combineResult.ingredientId);
 
       if (result.success) {
@@ -497,9 +501,10 @@ export class InventoryModal {
   /**
    * 丢弃道具
    */
-  discardItem(item) {
+  async discardItem(item) {
     // 确认丢弃
-    if (confirm(`确定要丢弃 "${item.name}" 吗？丢弃后无法找回。`)) {
+    const confirmed = await this.confirmModal.confirm('丢弃道具', `确定要丢弃 "${item.name}" 吗？丢弃后无法找回。`, 'danger');
+    if (confirmed) {
       const result = this.engine.discardItem(item.id);
 
       if (result.success) {
