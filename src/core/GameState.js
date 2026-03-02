@@ -233,10 +233,12 @@ export class GameState {
         { value: 40, type: 'below', desc: '开始出现幻觉' },
         { value: 20, type: 'below', desc: '现实扭曲' },
         { value: 10, type: 'below', desc: '理智崩溃边缘' },
+        { value: 0, type: 'below', desc: '理智耗尽' },
       ],
       stamina: [
         { value: 30, type: 'below', desc: '体力不支' },
         { value: 10, type: 'below', desc: '极度疲惫' },
+        { value: 0, type: 'below', desc: '力竭倒下' },
       ],
       temperature: [
         { value: 35, type: 'below', desc: '轻度失温', celsius: true },
@@ -250,7 +252,7 @@ export class GameState {
 
     for (const threshold of statusThresholds) {
       const crossed = threshold.type === 'below'
-        ? (oldValue >= threshold.value && newValue < threshold.value)
+        ? (oldValue >= threshold.value && newValue <= threshold.value)
         : (oldValue < threshold.value && newValue >= threshold.value);
       
       if (crossed) {

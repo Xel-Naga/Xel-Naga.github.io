@@ -30,37 +30,234 @@ class AdventureGame {
    */
   async init() {
     console.log(`🎮 悬观谜案：百年轮回 v${this.config.version}`);
-    console.log('正在初始化游戏系统...');
 
+    // 先显示启动界面
+    this.showStartScreen();
+    this.hideLoadingOverlay();
+
+    // 绑定启动界面按钮事件
+    this.bindStartScreenEvents();
+  }
+
+  /**
+   * 显示启动界面
+   */
+  showStartScreen() {
+    const startScreen = document.getElementById('start-screen');
+    if (startScreen) {
+      startScreen.classList.remove('hidden');
+    }
+
+    // 检查是否有存档
+    this.checkSaveFile();
+  }
+
+  /**
+   * 隐藏启动界面
+   */
+  hideStartScreen() {
+    const startScreen = document.getElementById('start-screen');
+    if (startScreen) {
+      startScreen.classList.add('hidden');
+      setTimeout(() => {
+        startScreen.style.display = 'none';
+      }, 500);
+    }
+
+    // 显示游戏容器
+    const gameContainer = document.getElementById('game-container');
+    if (gameContainer) {
+      gameContainer.style.display = 'block';
+    }
+  }
+
+  /**
+   * 绑定启动界面按钮事件
+   */
+  bindStartScreenEvents() {
+    // 开始新游戏
+    const newGameBtn = document.getElementById('btn-new-game');
+    if (newGameBtn) {
+      newGameBtn.addEventListener('click', () => {
+        this.startNewGame();
+      });
+    }
+
+    // 继续游戏
+    const continueBtn = document.getElementById('btn-continue');
+    if (continueBtn) {
+      continueBtn.addEventListener('click', () => {
+        this.continueGame();
+      });
+    }
+
+    // 设置
+    const settingsBtn = document.getElementById('btn-settings');
+    if (settingsBtn) {
+      settingsBtn.addEventListener('click', () => {
+        this.showStartScreenSettings();
+      });
+    }
+
+    // 制作团队
+    const creditsBtn = document.getElementById('btn-credits');
+    if (creditsBtn) {
+      creditsBtn.addEventListener('click', () => {
+        this.showCredits();
+      });
+    }
+  }
+
+  /**
+   * 检查存档
+   */
+  checkSaveFile() {
+    const continueBtn = document.getElementById('btn-continue');
+    const saveKey = 'xuan guan_save';
+    const saveData = localStorage.getItem(saveKey);
+
+    if (continueBtn) {
+      if (saveData) {
+        continueBtn.disabled = false;
+        continueBtn.style.opacity = '1';
+        continueBtn.textContent = '继续探索';
+      } else {
+        continueBtn.disabled = true;
+        continueBtn.style.opacity = '0.4';
+        continueBtn.textContent = '暂无存档';
+      }
+    }
+  }
+
+  /**
+   * 开始新游戏 - 显示过渡界面
+   */
+  async startNewGame() {
+    console.log('开始新的旅程...');
+
+    // 隐藏启动界面，显示过渡界面
+    this.hideStartScreen();
+    this.showIntroScreen();
+  }
+
+  /**
+   * 显示过渡界面
+   */
+  showIntroScreen() {
+    const introScreen = document.getElementById('intro-screen');
+    if (introScreen) {
+      introScreen.classList.remove('hidden');
+    }
+
+    // 绑定继续按钮事件
+    const continueBtn = document.getElementById('btn-intro-continue');
+    if (continueBtn) {
+      continueBtn.onclick = () => {
+        this.enterGameFromIntro();
+      };
+    }
+  }
+
+  /**
+   * 从过渡界面进入游戏
+   */
+  async enterGameFromIntro() {
+    // 隐藏过渡界面
+    const introScreen = document.getElementById('intro-screen');
+    if (introScreen) {
+      introScreen.classList.add('hidden');
+      setTimeout(() => {
+        introScreen.style.display = 'none';
+      }, 500);
+    }
+
+    // 显示游戏容器
+    const gameContainer = document.getElementById('game-container');
+    if (gameContainer) {
+      gameContainer.style.display = 'block';
+    }
+
+    await this.initializeGame();
+  }
+
+  /**
+   * 初始化游戏（通用）
+   */
+  async initializeGame() {
     try {
       // 初始化事件系统
       this.eventSystem = new EventSystem();
-      
+
       // 初始化游戏引擎
       this.engine = new GameEngine(this.eventSystem);
       await this.engine.init();
-      
+
       // 初始化UI渲染器
       this.ui = new UIRenderer(this.engine, this.eventSystem);
       this.ui.init();
-      
+
       // 绑定全局事件
       this.bindGlobalEvents();
-      
+
       this.isInitialized = true;
-      
-      // 隐藏加载遮罩
-      this.hideLoadingOverlay();
-      
+
       console.log('✅ 游戏初始化完成');
-      
+
       // 开始游戏
       this.start();
-      
+
     } catch (error) {
       console.error('❌ 游戏初始化失败:', error);
       this.showError('游戏加载失败，请刷新页面重试');
     }
+  }
+
+  /**
+   * 继续游戏 - 跳过过渡界面
+   */
+  async continueGame() {
+    console.log('继续探索...');
+
+    try {
+      // 隐藏启动界面，显示游戏容器
+      this.hideStartScreen();
+
+      // 初始化游戏引擎
+      this.engine = new GameEngine(this.eventSystem);
+      await this.engine.init();
+
+      // 初始化UI渲染器
+      this.ui = new UIRenderer(this.engine, this.eventSystem);
+      this.ui.init();
+
+      // 绑定全局事件
+      this.bindGlobalEvents();
+
+      this.isInitialized = true;
+
+      // 加载存档
+      this.engine.loadGame();
+
+      console.log('✅ 继续游戏初始化完成');
+
+    } catch (error) {
+      console.error('❌ 继续游戏失败:', error);
+      this.showError('读取存档失败，请重新开始');
+    }
+  }
+
+  /**
+   * 显示设置（启动界面）
+   */
+  showStartScreenSettings() {
+    alert('设置功能开发中...');
+  }
+
+  /**
+   * 显示制作团队
+   */
+  showCredits() {
+    alert('《悬观谜案：百年轮回》\n\n一款文字交互式推理解密游戏\n\n开发中...');
   }
 
   /**

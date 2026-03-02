@@ -23,6 +23,7 @@
   <link rel="stylesheet" href="./src/assets/styles/inventory-modal.css?v=2">
   <link rel="stylesheet" href="./src/assets/styles/decision-modal.css?v=1">
   <link rel="stylesheet" href="./src/assets/styles/item-selector.css?v=1">
+  <link rel="stylesheet" href="./src/assets/styles/start-screen.css?v=1">
 </head>
 <body>
   <!-- 背景效果层 -->
@@ -32,8 +33,75 @@
     <div class="vignette"></div>
   </div>
 
+  <!-- 启动界面 -->
+  <div id="start-screen" class="start-screen">
+    <!-- 烟雾层 -->
+    <div class="smoke-layer smoke-layer-bottom"></div>
+    <div class="smoke-layer smoke-layer-middle"></div>
+    <div class="smoke-layer smoke-layer-top"></div>
+
+    <!-- 内容 -->
+    <div class="start-content">
+      <h1 class="start-title">
+        <span class="title-main">悬观谜案</span>
+        <span class="title-sub">百年轮回</span>
+      </h1>
+
+      <p class="start-subtitle">文字交互式推理解密游戏</p>
+
+      <div class="start-buttons">
+        <button id="btn-new-game" class="start-btn start-btn-primary">
+          开始新的旅程
+        </button>
+        <button id="btn-continue" class="start-btn start-btn-secondary">
+          继续探索
+        </button>
+        <button id="btn-settings" class="start-btn start-btn-tertiary">
+          游戏设置
+        </button>
+        <button id="btn-credits" class="start-btn start-btn-tertiary">
+          制作团队
+        </button>
+      </div>
+
+      <div class="start-credits">
+        <p>一款基于文本的交互式推理解密游戏</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 故事背景过渡界面 -->
+  <div id="intro-screen" class="intro-screen hidden">
+    <!-- 烟雾层 -->
+    <div class="smoke-layer smoke-layer-bottom"></div>
+    <div class="smoke-layer smoke-layer-middle"></div>
+    <div class="smoke-layer smoke-layer-top"></div>
+
+    <!-- 内容 -->
+    <div class="intro-content">
+      <div class="intro-title">
+        <span class="title-main">悬观谜案</span>
+        <span class="title-sub">百年轮回</span>
+      </div>
+
+      <div class="intro-story">
+        <p class="intro-line">2025年1月</p>
+        <p class="intro-line">林墨与苏晓雨应陈青山之邀</p>
+        <p class="intro-line">前往西南山区的悬云观...</p>
+        <p class="intro-line intro-blank">&nbsp;</p>
+        <p class="intro-line">暴雪即将来袭，山路崎岖</p>
+        <p class="intro-line">那座道观中隐藏着</p>
+        <p class="intro-line">不为人知的秘密</p>
+      </div>
+
+      <button id="btn-intro-continue" class="intro-continue-btn">
+        点击继续 →
+      </button>
+    </div>
+  </div>
+
   <!-- 游戏主容器 -->
-  <div id="game-container" class="game-container">
+  <div id="game-container" class="game-container" style="display: none;">
     <!-- 标题栏 -->
     <header class="game-header">
       <div class="header-border">

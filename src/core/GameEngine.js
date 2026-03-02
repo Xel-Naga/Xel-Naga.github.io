@@ -331,6 +331,18 @@ export class GameEngine {
       return;
     }
 
+    // 处理体力耗尽导致的游戏结束
+    if (data.status === 'stamina' && data.threshold === 0 && data.type === 'below') {
+      this.triggerGameOver('exhaustion');
+      return;
+    }
+
+    // 处理理智崩溃导致的游戏结束
+    if (data.status === 'sanity' && data.threshold === 0 && data.type === 'below') {
+      this.triggerGameOver('madness');
+      return;
+    }
+
     // 根据状态和阈值生成反馈
     const feedback = this.generateThresholdFeedback(data);
     if (feedback) {
@@ -345,12 +357,33 @@ export class GameEngine {
   triggerGameOver(endingId) {
     console.log(`游戏结束: ${endingId}`);
 
+    // 根据结局类型设置不同的描述
+    const endings = {
+      frozen_death: {
+        title: '冻死',
+        description: '刺骨的寒意终于战胜了你的意志。在失去意识前，你仿佛看到了那座道观中闪烁着诡异的火光...',
+        hint: '在寒冷的天气中，请务必注意保暖，及时寻找温暖的环境。'
+      },
+      exhaustion: {
+        title: '力竭',
+        description: '你的身体已经达到极限，双腿一软倒在了雪地中。意识逐渐模糊，暴雪将你完全覆盖...',
+        hint: '请合理分配体力，及时休息补充。'
+      },
+      madness: {
+        title: '理智崩溃',
+        description: '连续的冲击让你的精神彻底崩溃。你开始看到不存在的东西，听见不存在的声音...',
+        hint: '尽量避免接触过于恐怖的事物，必要时使用安眠药恢复理智。'
+      }
+    };
+
+    const ending = endings[endingId] || endings.exhaustion;
+
     // 显示游戏结束界面
     this.eventSystem.emit('game:over', {
       endingId: endingId,
-      title: '冻死',
-      description: '刺骨的寒意终于战胜了你的意志。在失去意识前，你仿佛看到了那座道观中闪烁着诡异的火光...',
-      hint: '在寒冷的天气中，请务必注意保暖，及时寻找温暖的环境。'
+      title: ending.title,
+      description: ending.description,
+      hint: ending.hint
     });
   }
 
