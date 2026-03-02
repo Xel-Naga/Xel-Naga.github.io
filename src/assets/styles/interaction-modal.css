@@ -179,6 +179,50 @@
   color: var(--color-bone-white-dark);
 }
 
+/* 状态效果颜色 */
+.effect-sanity-negative {
+  color: var(--color-danger);
+  animation: sanity-blink 1.5s ease-in-out infinite;
+}
+
+.effect-sanity-positive {
+  color: var(--color-collect);
+}
+
+.effect-stamina-negative {
+  color: var(--color-clue);
+}
+
+.effect-stamina-positive {
+  color: var(--color-collect);
+}
+
+.effect-temperature-negative {
+  color: var(--color-clue);
+}
+
+.effect-temperature-positive {
+  color: var(--color-collect);
+}
+
+.effect-intuition-negative {
+  color: var(--color-clue);
+}
+
+.effect-intuition-positive {
+  color: var(--color-examine);
+}
+
+/* 理智减少闪烁动画 */
+@keyframes sanity-blink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
 /* 线索区域 */
 .clue-section,
 .item-section {

@@ -103,17 +103,29 @@ export class InteractionModal {
    */
   buildEffectsSection(effects) {
     if (!effects || Object.keys(effects).length === 0) return '';
-    
-    const effectTexts = [];
-    if (effects.sanity) effectTexts.push(`理智 ${effects.sanity > 0 ? '+' : ''}${effects.sanity}`);
-    if (effects.stamina) effectTexts.push(`体力 ${effects.stamina > 0 ? '+' : ''}${effects.stamina}`);
-    if (effects.temperature) effectTexts.push(`体温 ${effects.temperature > 0 ? '+' : ''}${effects.temperature}`);
-    if (effects.intuition) effectTexts.push(`直觉 ${effects.intuition > 0 ? '+' : ''}${effects.intuition}`);
+
+    const effectParts = [];
+    if (effects.sanity) {
+      const sanityClass = effects.sanity < 0 ? 'effect-sanity-negative' : (effects.sanity > 0 ? 'effect-sanity-positive' : '');
+      effectParts.push(`<span class="${sanityClass}">理智 ${effects.sanity > 0 ? '+' : ''}${effects.sanity}</span>`);
+    }
+    if (effects.stamina) {
+      const staminaClass = effects.stamina < 0 ? 'effect-stamina-negative' : (effects.stamina > 0 ? 'effect-stamina-positive' : '');
+      effectParts.push(`<span class="${staminaClass}">体力 ${effects.stamina > 0 ? '+' : ''}${effects.stamina}</span>`);
+    }
+    if (effects.temperature) {
+      const tempClass = effects.temperature < 0 ? 'effect-temperature-negative' : (effects.temperature > 0 ? 'effect-temperature-positive' : '');
+      effectParts.push(`<span class="${tempClass}">体温 ${effects.temperature > 0 ? '+' : ''}${effects.temperature}</span>`);
+    }
+    if (effects.intuition) {
+      const intuClass = effects.intuition < 0 ? 'effect-intuition-negative' : (effects.intuition > 0 ? 'effect-intuition-positive' : '');
+      effectParts.push(`<span class="${intuClass}">直觉 ${effects.intuition > 0 ? '+' : ''}${effects.intuition}</span>`);
+    }
 
     return `
       <div class="effects-section">
         <span class="effects-label">可能影响:</span>
-        <span class="effects-list">${effectTexts.join(', ')}</span>
+        <span class="effects-list">${effectParts.join(', ')}</span>
       </div>
     `;
   }

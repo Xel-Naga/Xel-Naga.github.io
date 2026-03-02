@@ -7,6 +7,7 @@ import { GameEngine } from './core/GameEngine.js';
 import { UIRenderer } from './core/UIRenderer.js';
 import { EventSystem } from './core/EventSystem.js';
 import { ConfirmModal } from './components/ConfirmModal.js';
+import { SmokeEffectManager } from './components/SmokeEffect.js';
 
 // 游戏配置
 const GAME_CONFIG = {
@@ -24,7 +25,23 @@ class AdventureGame {
     this.ui = null;
     this.eventSystem = null;
     this.confirmModal = new ConfirmModal();
+    this.smokeEffect = null;
     this.isInitialized = false;
+
+    // 烟雾效果配置
+    this.smokeOptions = {
+      particleCount: 60,
+      baseColor: { r: 80, g: 15, b: 15 },
+      minOpacity: 0.25,
+      maxOpacity: 0.55,
+      minSize: 50,
+      maxSize: 150,
+      minSpeedY: -2.0,
+      maxSpeedY: -0.5,
+      minSpeedX: -0.8,
+      maxSpeedX: 0.8,
+      turbulence: 0.5,
+    };
   }
 
   /**
@@ -33,12 +50,31 @@ class AdventureGame {
   async init() {
     console.log(`🎮 悬观谜案：百年轮回 v${this.config.version}`);
 
-    // 先显示启动界面
+    // 先显示启动界面（确保容器可见以便获取正确尺寸）
     this.showStartScreen();
     this.hideLoadingOverlay();
 
+    // 再初始化烟雾效果（需要在容器可见后）
+    this.initSmokeEffects();
+
     // 绑定启动界面按钮事件
     this.bindStartScreenEvents();
+  }
+
+  /**
+   * 初始化烟雾效果
+   */
+  initSmokeEffects() {
+    // 启动界面烟雾 - 延迟确保容器完全渲染
+    const startScreen = document.getElementById('start-screen');
+    if (startScreen) {
+      setTimeout(() => {
+        this.smokeEffect = new SmokeEffectManager(startScreen, {
+          ...this.smokeOptions,
+          particleCount: 45,
+        }).create('canvas').start();
+      }, 100);
+    }
   }
 
   /**
@@ -151,6 +187,21 @@ class AdventureGame {
       introScreen.classList.remove('hidden');
     }
 
+    // 停止启动界面烟雾
+    if (this.smokeEffect) {
+      this.smokeEffect.destroy();
+    }
+
+    // 延迟创建过渡界面烟雾，确保容器完全可见后再初始化
+    setTimeout(() => {
+      this.smokeEffect = new SmokeEffectManager(introScreen, {
+        ...this.smokeOptions,
+        particleCount: 35,
+        minOpacity: 0.1,
+        maxOpacity: 0.35,
+      }).create('canvas').start();
+    }, 150);
+
     // 绑定继续按钮事件
     const continueBtn = document.getElementById('btn-intro-continue');
     if (continueBtn) {
@@ -164,6 +215,12 @@ class AdventureGame {
    * 从过渡界面进入游戏
    */
   async enterGameFromIntro() {
+    // 停止烟雾效果
+    if (this.smokeEffect) {
+      this.smokeEffect.destroy();
+      this.smokeEffect = null;
+    }
+
     // 隐藏过渡界面
     const introScreen = document.getElementById('intro-screen');
     if (introScreen) {

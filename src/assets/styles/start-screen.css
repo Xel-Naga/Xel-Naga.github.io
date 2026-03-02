@@ -19,84 +19,6 @@
   display: none;
 }
 
-/* 烟雾层 */
-.smoke-layer {
-  position: absolute;
-  width: 200%;
-  height: 200%;
-  top: -50%;
-  left: -50%;
-  background: radial-gradient(ellipse at center, transparent 0%, transparent 40%, rgba(20, 0, 0, 0.3) 100%);
-  filter: blur(30px);
-  pointer-events: none;
-}
-
-/* 底层烟雾 - 慢速 */
-.smoke-layer-bottom {
-  background: radial-gradient(
-    ellipse at 30% 50%,
-    transparent 0%,
-    transparent 30%,
-    rgba(40, 0, 0, 0.6) 50%,
-    transparent 70%
-  );
-  animation: smoke-drift-bottom 25s ease-in-out infinite;
-}
-
-/* 中层烟雾 - 中速 */
-.smoke-layer-middle {
-  background: radial-gradient(
-    ellipse at 60% 40%,
-    transparent 0%,
-    transparent 35%,
-    rgba(80, 10, 10, 0.55) 55%,
-    transparent 75%
-  );
-  animation: smoke-drift-middle 18s ease-in-out infinite;
-  animation-delay: -5s;
-}
-
-/* 顶层烟雾 - 快速 */
-.smoke-layer-top {
-  background: radial-gradient(
-    ellipse at 45% 60%,
-    transparent 0%,
-    transparent 40%,
-    rgba(30, 0, 0, 0.75) 60%,
-    transparent 80%
-  );
-  animation: smoke-drift-top 12s ease-in-out infinite;
-  animation-delay: -3s;
-}
-
-/* 烟雾流动动画 */
-@keyframes smoke-drift-bottom {
-  0%, 100% {
-    transform: translateX(-5%) translateY(-3%) rotate(-2deg);
-  }
-  50% {
-    transform: translateX(5%) translateY(3%) rotate(2deg);
-  }
-}
-
-@keyframes smoke-drift-middle {
-  0%, 100% {
-    transform: translateX(-8%) translateY(5%) rotate(3deg);
-  }
-  50% {
-    transform: translateX(8%) translateY(-5%) rotate(-3deg);
-  }
-}
-
-@keyframes smoke-drift-top {
-  0%, 100% {
-    transform: translateX(-12%) translateY(-8%) rotate(-4deg);
-  }
-  50% {
-    transform: translateX(12%) translateY(8%) rotate(4deg);
-  }
-}
-
 /* 内容容器 */
 .start-content {
   position: relative;
@@ -357,19 +279,6 @@
 
 .intro-screen.hidden {
   display: none;
-}
-
-/* 过渡界面烟雾稍淡 */
-.intro-screen .smoke-layer-bottom {
-  opacity: 0.7;
-}
-
-.intro-screen .smoke-layer-middle {
-  opacity: 0.7;
-}
-
-.intro-screen .smoke-layer-top {
-  opacity: 0.7;
 }
 
 /* 内容容器 */
